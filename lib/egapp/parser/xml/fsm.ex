@@ -1,4 +1,4 @@
-defmodule Egapp.Parser.FSM do
+defmodule Egapp.Parser.XML.FSM do
   require Logger
 
   @behaviour :gen_fsm

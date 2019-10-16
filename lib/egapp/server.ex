@@ -19,10 +19,10 @@ defmodule Egapp.Server do
   end
 
   defp loop(socket, args) do
-    [mod, func] = args
+    parser = Keyword.fetch!(args, :parser)
     conn = accept(socket)
     {:ok, pid} = Task.Supervisor.start_child(Egapp.ParserSupervisor, fn ->
-      apply(mod, func, [conn])
+      parser.parse(conn)
     end)
     :gen_tcp.controlling_process(conn, pid)
     loop(socket, args)

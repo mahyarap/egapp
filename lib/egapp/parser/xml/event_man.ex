@@ -1,4 +1,4 @@
-defmodule Egapp.Parser.EventManager do
+defmodule Egapp.Parser.XML.EventMan do
   require Logger
 
   @behaviour GenServer
@@ -42,7 +42,12 @@ defmodule Egapp.Parser.EventManager do
     xml:lang="#{lang}"
     xmlns="jabber:client"
     xmlns:stream="http://etherx.jabber.org/streams">
-    <stream:features/>
+    <stream:features>
+    <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
+    <mechanism>ANONYMOUS</mechanism>
+    <mechanism>PLAIN</mechanism>
+    </mechanisms>
+    </stream:features>
     """
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
