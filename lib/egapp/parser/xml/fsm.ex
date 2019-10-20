@@ -36,7 +36,7 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def begin({:xmlstreamstart, tag_name, attrs}, state) do
-    Logger.debug("c2s: #{inspect {:xml_stream_start, tag_name, attrs, state}}")
+    Logger.debug("c2s: #{inspect {:begin, tag_name, attrs, state}}")
     GenServer.cast(state.event_man, {tag_name, to_map(attrs)})
     {:next_state, :xml_stream_start, state}
   end
@@ -54,8 +54,12 @@ defmodule Egapp.Parser.XML.FSM do
 
   def xml_stream_start({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
     IO.inspect {:xml_stream_element, child, to_map(attrs), data, state}
-    GenServer.cast(state.event_man, {child, to_map(attrs), data})
-    {:next_state, :xml_stream_element, state}
+    next_state =
+      case GenServer.call(state.event_man, {child, to_map(attrs), data}) do
+        :reset -> :begin
+        _ -> :xml_stream_element
+      end
+    {:next_state, next_state, state}
   end
 
   def xml_stream_start({:xmlstreamend, tag_name}, state) do

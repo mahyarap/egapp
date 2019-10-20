@@ -18,16 +18,20 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   @impl true
-  def handle_call(a, b, c) do
-    {:ok, a, b, c}
+  def handle_call({"auth", attrs, data}, _from,  state) do
+    Logger.debug("c2s: #{inspect {"auth", attrs, data}}")
+    IO.inspect Egapp.SASL.authenticate!(attrs["mechanism"], Keyword.fetch!(data, :xmlcdata))
+    state = Map.put(state, :client_props, Map.put(state.client_props, :is_authenticated, true))
+    resp = """
+    <success xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>
+    """
+    apply(state.mod, :send, [state.to, resp])
+    {:reply, :reset, state}
   end
 
   @impl true
   def handle_cast({"stream:stream",
-    %{
-      "xmlns" => @xmlns_c2s,
-      "version" => @xmpp_version
-    } = attrs},
+    %{"xmlns" => @xmlns_c2s, "version" => @xmpp_version} = attrs},
     state)
   do
     lang = Map.get(attrs, "xml:lang", "en")
@@ -42,13 +46,22 @@ defmodule Egapp.Parser.XML.EventMan do
     xml:lang="#{lang}"
     xmlns="jabber:client"
     xmlns:stream="http://etherx.jabber.org/streams">
-    <stream:features>
-    <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
-    <mechanism>ANONYMOUS</mechanism>
-    <mechanism>PLAIN</mechanism>
-    </mechanisms>
-    </stream:features>
     """
+    resp = resp <>
+      if Map.get(state.client_props, :is_authenticated) do
+        """
+        <stream:features/>
+        """
+      else
+        """
+        <stream:features>
+        <mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>
+        <mechanism>ANONYMOUS</mechanism>
+        <mechanism>PLAIN</mechanism>
+        </mechanisms>
+        </stream:features>
+        """
+      end
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
   end
@@ -135,17 +148,6 @@ defmodule Egapp.Parser.XML.EventMan do
     apply(state.mod, :send, [state.to, resp])
     {:stop, :normal, state}
   end
-  def handle_cast({_tag_name, _attrs}, state) do
-    resp = """
-    <stream:error>
-    <invalid-xml
-    xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-    </stream:error>
-    </stream:stream>
-    """
-    apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
-  end
   def handle_cast({"iq", attrs, data}, state) do
     Logger.debug("c2s: #{inspect {"iq", attrs, data}}")
     resp = IqStanza.handle({attrs, data})
@@ -155,6 +157,17 @@ defmodule Egapp.Parser.XML.EventMan do
   def handle_cast({"message", _attrs, _data}, state) do
     resp = """
     <message>hoy</message>
+    """
+    apply(state.mod, :send, [state.to, resp])
+    {:noreply, state}
+  end
+  def handle_cast({_tag_name, _attrs}, state) do
+    resp = """
+    <stream:error>
+    <invalid-xml
+    xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
+    </stream:error>
+    </stream:stream>
     """
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
