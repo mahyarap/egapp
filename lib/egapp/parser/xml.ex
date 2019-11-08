@@ -18,7 +18,6 @@ defmodule Egapp.Parser.XML do
         IO.inspect :sys.get_state(fsm)
         case :sys.get_state(fsm) do
           {:begin, _} ->
-            IO.puts "GGGGGGGGGG"
             :fxml_stream.reset(stream)
             :fxml_stream.parse(stream, packet)
           _ ->

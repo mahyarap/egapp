@@ -37,13 +37,13 @@ defmodule Egapp.Parser.XML.FSM do
 
   def begin({:xmlstreamstart, tag_name, attrs}, state) do
     Logger.debug("c2s: #{inspect {:begin, tag_name, attrs, state}}")
-    GenServer.cast(state.event_man, {tag_name, to_map(attrs)})
+    GenServer.call(state.event_man, {tag_name, to_map(attrs)})
     {:next_state, :xml_stream_start, state}
   end
 
   def begin({:xmlstreamerror, error}, state) do
     IO.inspect {:xml_stream_error, error, state}
-    GenServer.cast(state.event_man, {"error:parsing", error})
+    GenServer.call(state.event_man, {"error:parsing", error})
     {:stop, :normal, state}
   end
 
@@ -86,7 +86,7 @@ defmodule Egapp.Parser.XML.FSM do
 
   def xml_stream_element({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
     IO.inspect {:xml_stream_element, child, attrs, data, state}
-    GenServer.cast(state.event_man, {child, to_map(attrs), data})
+    GenServer.call(state.event_man, {child, to_map(attrs), data})
     {:next_state, :xml_stream_element, state}
   end
 
@@ -96,7 +96,7 @@ defmodule Egapp.Parser.XML.FSM do
       # IO.puts "matched"
       # Egapp.Stack.reset(state)
     # end
-    GenServer.cast(:event_man, :read)
+    GenServer.call(:event_man, :read)
     {:next_state, :begin, state}
   end
 
