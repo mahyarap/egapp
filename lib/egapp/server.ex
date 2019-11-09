@@ -10,10 +10,10 @@ defmodule Egapp.Server do
   end
 
   def start_link(args) do
-    {:ok, spawn_link(fn -> serve(args) end)}
+    {:ok, spawn_link(__MODULE__, :serve, [args])}
   end
 
-  defp serve(args) do
+  def serve(args) do
     socket = listen(5222)
     loop(socket, args)
   end
