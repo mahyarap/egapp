@@ -152,12 +152,19 @@ defmodule Egapp.Parser.XML.EventMan do
     # apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
-  def handle_call({"message", _attrs, _data}, state) do
+  def handle_call({"message", attrs, _data}, _from, state) do
     resp = """
-    <message>hoy</message>
+    <message
+        from='bar@localhost/orchard'
+        id='#{attrs["id"]}'
+        to='foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'
+        type='chat'
+        xml:lang='en'>
+      <body>Neither, fair saint, if either thee dislike.</body>
+    </message>\
     """
     apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
+    {:reply, :continue, state}
   end
   def handle_call({_tag_name, _attrs}, state) do
     resp = """
@@ -180,64 +187,23 @@ defmodule IqStanza do
     QueryStanza.handle({to_map(child_attrs), data, attrs})
   end
   def handle({%{"type" => "get"} = attrs, [{:xmlel, "vCard", child_attrs, data}]}) do
-    """
-    <iq id='#{attrs["id"]}'
-    to="foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb"
-    type='result'>
-    <vCard xmlns='vcard-temp'>
-    <FN>Peter Saint-Andre</FN>
-    <N>
-      <FAMILY>Saint-Andre</FAMILY>
-      <GIVEN>Peter</GIVEN>
-      <MIDDLE/>
-    </N>
-    <NICKNAME>stpeter</NICKNAME>
-    <URL>http://www.xmpp.org/xsf/people/stpeter.shtml</URL>
-    <BDAY>1966-08-06</BDAY>
-    <ORG>
-      <ORGNAME>XMPP Standards Foundation</ORGNAME>
-      <ORGUNIT/>
-    </ORG>
-    <TITLE>Executive Director</TITLE>
-    <ROLE>Patron Saint</ROLE>
-    <TEL><WORK/><VOICE/><NUMBER>303-308-3282</NUMBER></TEL>
-    <TEL><WORK/><FAX/><NUMBER/></TEL>
-    <TEL><WORK/><MSG/><NUMBER/></TEL>
-    <ADR>
-      <WORK/>
-      <EXTADD>Suite 600</EXTADD>
-      <STREET>1899 Wynkoop Street</STREET>
-      <LOCALITY>Denver</LOCALITY>
-      <REGION>CO</REGION>
-      <PCODE>80202</PCODE>
-      <CTRY>USA</CTRY>
-    </ADR>
-    <TEL><HOME/><VOICE/><NUMBER>303-555-1212</NUMBER></TEL>
-    <TEL><HOME/><FAX/><NUMBER/></TEL>
-    <TEL><HOME/><MSG/><NUMBER/></TEL>
-    <ADR>
-      <HOME/>
-      <EXTADD/>
-      <STREET/>
-      <LOCALITY>Denver</LOCALITY>
-      <REGION>CO</REGION>
-      <PCODE>80209</PCODE>
-      <CTRY>USA</CTRY>
-    </ADR>
-    <EMAIL><INTERNET/><PREF/><USERID>stpeter@jabber.org</USERID></EMAIL>
-    <JABBERID>stpeter@jabber.org</JABBERID>
-    <DESC>
-      More information about me is located on my
-      personal website: http://www.saint-andre.com/
-    </DESC>
-    </vCard>
-    </iq>
-    """
+    Stanza.iq(attrs["id"], 'result',
+      {
+        :vCard,
+        [xmlns: 'vcard-temp'],
+        []
+      }
+    )
+    |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"type" => "set"} = attrs, [{:xmlel, "query", child_attrs, data}]}) do
     """
     <iq type='result' id='#{attrs["id"]}'/>
     """
+  end
+  def handle({%{"type" => "get"} = attrs, [{:xmlel, "ping", child_attrs, data}]}) do
+    Stanza.iq(attrs["id"], 'result')
+    |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"type" => "set"} = attrs, [{:xmlel, "bind", child_attrs, data}]}) do
     Stanza.iq(attrs["id"], 'result', Element.bind('foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
@@ -290,18 +256,14 @@ defmodule QueryStanza do
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"xmlns" => "jabber:iq:roster"}, [], state}) do
-    """
-    <iq from="localhost"
-    id='#{state["id"]}'
-    to="foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb"
-    type="result">
-    <query xmlns="jabber:iq:roster">
-    <item jid="alice@wonderland.lit"/>
-    <item jid="madhatter@wonderland.lit"/>
-    <item jid="whiterabbit@wonderland.lit"/>
-    </query>
-    </iq>\
-    """
+    Stanza.iq(state["id"], 'result',
+      {
+        :query,
+        [xmlns: 'jabber:iq:roster'],
+        [{:item, [jid: 'alice@wonderland.lit'], []}]
+      }
+    )
+    |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"xmlns" => "http://jabber.org/protocol/bytestreams"}, [], state}) do
     """
