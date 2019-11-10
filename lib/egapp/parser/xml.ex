@@ -15,7 +15,6 @@ defmodule Egapp.Parser.XML do
   defp loop(conn, stream, fsm) do
     case Egapp.Server.recv(conn) do
       {:ok, packet} ->
-        IO.inspect :sys.get_state(fsm)
         case :sys.get_state(fsm) do
           {:begin, _} ->
             :fxml_stream.reset(stream)

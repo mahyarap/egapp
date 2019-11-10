@@ -64,9 +64,6 @@ defmodule Egapp.Parser.XML.FSM do
 
   def xml_stream_start({:xmlstreamend, tag_name}, state) do
     IO.inspect {:xml_stream_end, tag_name, state}
-    # if tag_name == Egapp.Stack.pop(state).tag_name do
-      # IO.puts "matched"
-    # end
     {:next_state, :xml_stream_start, state}
   end
 
@@ -92,10 +89,6 @@ defmodule Egapp.Parser.XML.FSM do
 
   def xml_stream_element({:xmlstreamend, tag_name}, state) do
     IO.inspect {:xml_stream_end, tag_name, state}
-    # if tag_name == Egapp.Stack.pop(state).tag_name do
-      # IO.puts "matched"
-      # Egapp.Stack.reset(state)
-    # end
     GenServer.call(:event_man, :read)
     {:next_state, :begin, state}
   end
@@ -110,31 +103,3 @@ defmodule Egapp.Parser.XML.FSM do
     {:next_state, :xml_stream_element, state}
   end
 end
-
-# defmodule Egapp.Stack do
-#   use Agent
-
-#   def start_link do
-#     Agent.start_link(fn -> [] end)
-#   end
-
-#   def push(stack, el) do
-#     Agent.update(stack, fn stack -> [el | stack] end)
-#   end
-
-#   def pop(stack) do
-#     Agent.get_and_update(stack, fn stack -> {hd(stack), tl(stack)} end)
-#   end
-
-#   def top(stack) do
-#     Agent.get(stack, &hd(&1))
-#   end
-
-#   def reset(stack) do
-#     Agent.update(stack, fn _stack -> [] end)
-#   end
-
-#   def get(stack) do
-#     Agent.get(stack, fn stack -> stack end)
-#   end
-# end
