@@ -6,13 +6,12 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
+  @doc """
+  RFC6120 7.4
+  RFC6120 7.6.1
+  """
   def bind(jid \\ nil) do
-    content = 
-      if jid do
-        [{:jid, [jid]}]
-      else
-        []
-      end
+    content = if jid do [{:jid, [jid]}] else [] end
 
     {
       :bind,
