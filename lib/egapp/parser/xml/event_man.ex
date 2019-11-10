@@ -42,7 +42,7 @@ defmodule Egapp.Parser.XML.EventMan do
     features = Element.features(feature)
 
     resp =
-      Stream.stream(id, lang, features)
+      Stream.stream(id, from: Map.get(attrs, "from"), content: features)
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> Enum.reverse()
       |> tl()
