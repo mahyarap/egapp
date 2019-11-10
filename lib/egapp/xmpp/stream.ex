@@ -20,10 +20,10 @@ defmodule Egapp.XMPP.Stream do
       "xmlns:stream": 'http://etherx.jabber.org/streams',
     ]
     {from, opts} = Keyword.pop(opts, :from)
-    attrs = if from do [{:to, from} | attrs] else attrs end
+    attrs = if from, do: [{:to, from} | attrs], else: attrs
 
     {content, opts} = Keyword.pop(opts, :content)
-    content = if content do [content] else [] end
+    content = if content, do: [content], else: []
 
     {
       :"stream:stream",

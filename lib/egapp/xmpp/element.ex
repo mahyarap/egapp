@@ -1,4 +1,7 @@
 defmodule Egapp.XMPP.Element do
+  @doc """
+  RFC6120 4.3.2
+  """
   def features(content) do
     {
       :"stream:features",
@@ -20,11 +23,16 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
+  @doc """
+  RFC6120 6.3.3
+  RFC6120 6.4.1
+  """
   def mechanisms do
     {
       :mechanisms,
       [xmlns: 'urn:ietf:params:xml:ns:xmpp-sasl'],
       [
+        # Server preference order
         {:mechanism, ['ANONYMOUS']},
         {:mechanism, ['PLAIN']}
       ]

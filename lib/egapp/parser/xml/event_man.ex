@@ -27,27 +27,23 @@ defmodule Egapp.Parser.XML.EventMan do
   do
     lang = Map.get(attrs, "xml:lang", "en")
     state = Map.put(state, :client_props, Map.put(state.client_props, :lang, lang))
-    id =
-      if Map.get(state.client_props, :is_authenticated) do
-        "gPybzaOzBmaADgxKXu9UClbp0"
-      else
-        "TR84Sm6A3hnt3Q065SnAbbk3Y"
-      end
-    feature = 
+    id = Enum.random(10_000_000..99_999_999)
+    features =
         if Map.get(state.client_props, :is_authenticated) do
           Element.bind()
         else
           Element.mechanisms()
         end
-    features = Element.features(feature)
+    content = Element.features(features)
 
     resp =
-      Stream.stream(id, from: Map.get(attrs, "from"), content: features)
+      Stream.stream(id, from: Map.get(attrs, "from"), content: content)
       |> :xmerl.export_simple_element(:xmerl_xml)
+      # Remove </stream:stream> which is automatically created
       |> Enum.reverse()
       |> tl()
       |> Enum.reverse()
-    apply(state.mod, :send, [state.to, ['<?xml version="1.0"?>', resp]])
+    apply(state.mod, :send, [state.to, ['<?xml version="1.0"?>' | resp]])
     {:reply, :continue, state}
   end
   def handle_call({"stream:stream", %{"xmlns" => _, "version" => @xmpp_version}},
