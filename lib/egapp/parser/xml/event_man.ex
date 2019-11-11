@@ -19,9 +19,13 @@ defmodule Egapp.Parser.XML.EventMan do
     {:ok, state}
   end
 
+  defp prepend_xml_decl(content) do
+    ['<?xml version="1.0"?>' | content]
+  end
+
   @impl true
   def handle_call({"stream:stream",
-    %{"xmlns" => @xmlns_c2s, "version" => @xmpp_version} = attrs},
+    %{"xmlns:stream" => @xmlns_stream, "version" => @xmpp_version} = attrs},
     _from,
     state)
   do
@@ -46,27 +50,34 @@ defmodule Egapp.Parser.XML.EventMan do
     apply(state.mod, :send, [state.to, ['<?xml version="1.0"?>' | resp]])
     {:reply, :continue, state}
   end
-  def handle_call({"stream:stream", %{"xmlns" => _, "version" => @xmpp_version}},
+  def handle_call({"stream:stream",
+    %{"xmlns:stream" => _, "version" => @xmpp_version} = attrs},
+    _from,
     state)
   do
-    resp = """
-    <stream:error>
-    <invalid-namespace
-    xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-    </stream:error>
-    """
-    apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
+    lang = Map.get(attrs, "xml:lang", "en")
+    id = Enum.random(10_000_000..99_999_999)
+    content = Stream.invalid_namespace_error()
+
+    resp =
+      Stream.stream(id, from: Map.get(attrs, "from"), content: content)
+      |> :xmerl.export_simple_element(:xmerl_xml)
+    apply(state.mod, :send, [state.to, prepend_xml_decl(resp)])
+    {:reply, :stop, state}
   end
-  def handle_call({"stream:stream", %{"xmlns" => _, "version" => _}}, state) do
-    resp = """
-    <stream:error>
-    <unsupported-version
-    xmlns='urn:ietf:params:xml:ns:xmpp-streams'/>
-    </stream:error>
-    """
+  def handle_call({"stream:stream", %{"xmlns:stream" => _, "version" => _} = attrs},
+    _from,
+    state)
+  do
+    lang = Map.get(attrs, "xml:lang", "en")
+    id = Enum.random(10_000_000..99_999_999)
+    content = Stream.unsupported_version_error()
+
+    resp =
+      Stream.stream(id, from: Map.get(attrs, "from"), content: content)
+      |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
+    {:reply, :stop, state}
   end
   def handle_call({"stream:stream", attrs}, state) do
     resp =
@@ -252,13 +263,24 @@ defmodule QueryStanza do
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"xmlns" => "jabber:iq:roster"}, [], state}) do
-    Stanza.iq(state["id"], 'result',
-      {
-        :query,
-        [xmlns: 'jabber:iq:roster'],
-        [{:item, [jid: 'alice@wonderland.lit'], []}]
-      }
-    )
+    # Stanza.iq(state["id"], 'result',
+    #   {
+    #     :query,
+    #     [xmlns: 'jabber:iq:roster'],
+    #     [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
+    #   }
+    # )
+    {
+      :iq,
+      [id: state["id"], type: 'result', to: 'foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'],
+      [
+        {
+          :query,
+          [xmlns: 'jabber:iq:roster'],
+          [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
+        }
+      ]
+    }
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"xmlns" => "http://jabber.org/protocol/bytestreams"}, [], state}) do

@@ -31,4 +31,28 @@ defmodule Egapp.XMPP.Stream do
       content
     }
   end
+
+  defp error(err) do
+    {
+      :"stream:error",
+      [],
+      [err]
+    }
+  end
+
+  def invalid_namespace_error do
+    error({
+      :"invalid-namespace",
+      [xmlns: 'urn:ietf:params:xml:ns:xmpp-streams'],
+      []
+    })
+  end
+
+  def unsupported_version_error do
+    error({
+      :"unsupported-version",
+      [xmlns: 'urn:ietf:params:xml:ns:xmpp-streams'],
+      []
+    })
+  end
 end
