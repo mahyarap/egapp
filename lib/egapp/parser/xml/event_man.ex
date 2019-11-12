@@ -19,7 +19,8 @@ defmodule Egapp.Parser.XML.EventMan do
 
   @impl true
   def handle_call(
-        {"stream:stream", %{"xmlns:stream" => Const.xmlns_stream, "version" => Const.xmpp_version} = attrs},
+        {"stream:stream",
+          %{"xmlns:stream" => Const.xmlns_stream, "version" => Const.xmpp_version} = attrs},
         _from,
         state
       ) do
@@ -44,7 +45,7 @@ defmodule Egapp.Parser.XML.EventMan do
       |> tl()
       |> Enum.reverse()
 
-    apply(state.mod, :send, [state.to, ['<?xml version="1.0"?>' | resp]])
+    apply(state.mod, :send, [state.to, prepend_xml_decl(resp)])
     {:reply, :continue, state}
   end
 

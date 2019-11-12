@@ -1,6 +1,5 @@
 defmodule Egapp.XMPP.Element do
   require Egapp.Constants, as: Const
-  alias Egapp.XMPP.Stanza
 
   @doc """
   RFC6120 4.3.2

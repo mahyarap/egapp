@@ -16,14 +16,14 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_items}, data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_items}, _data}]}
       ) do
     iq(attrs["id"], 'result', Element.query(xmlns: Const.xmlns_disco_items))
   end
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_info}, data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_info}, _data}]}
       ) do
     iq(
       attrs["id"],
@@ -36,7 +36,7 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def iq(
-        {%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_roster}, data}]}
+        {%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_roster}, _data}]}
       ) do
     iq(
       attrs["id"],
@@ -50,7 +50,7 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_bytestreams}, data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_bytestreams}, _data}]}
       ) do
     iq(
       attrs["id"],
@@ -140,9 +140,5 @@ defmodule Egapp.XMPP.Stanza do
       ],
       ['fooo']
     }
-  end
-
-  defp to_map(attrs) do
-    Enum.into(attrs, %{})
   end
 end
