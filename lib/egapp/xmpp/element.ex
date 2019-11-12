@@ -47,6 +47,9 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
+  @doc """
+  RFC3921 3
+  """
   def session do
     {
       :session,

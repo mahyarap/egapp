@@ -217,7 +217,7 @@ defmodule IqStanza do
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
   def handle({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}) do
-    Stanza.iq(attrs["id"], 'result', Element.session())
+    Stanza.iq(attrs["id"], 'result')
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
 
