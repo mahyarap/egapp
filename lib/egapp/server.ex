@@ -21,12 +21,11 @@ defmodule Egapp.Server do
   defp loop(socket, args) do
     parser = Keyword.fetch!(args, :parser)
     conn = accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(Egapp.ParserSupervisor, fn ->
+    {:ok, _} = Task.Supervisor.start_child(Egapp.ConnectionSupervisor, fn ->
       {:ok, pid} = GenServer.start_link(parser, conn)
       :gen_tcp.controlling_process(conn, pid)
       recv_loop(conn, parser, pid)
     end)
-    # :gen_tcp.controlling_process(conn, pid)
     loop(socket, args)
   end
 
