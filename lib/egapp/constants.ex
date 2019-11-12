@@ -48,5 +48,7 @@ defmodule Egapp.Constants do
   const xmlns_sasl,        "urn:ietf:params:xml:ns:xmpp-sasl"
   const xmlns_session,     "urn:ietf:params:xml:ns:xmpp-session"
   const xmlns_stream,      "http://etherx.jabber.org/streams"
+  const xmlns_vcard,       "vcard-temp"
+  const xmlns_version,      "jabber:iq:version"
   const xmpp_version,      "1.0"
 end

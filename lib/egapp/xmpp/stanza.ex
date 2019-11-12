@@ -35,6 +35,8 @@ defmodule Egapp.XMPP.Stanza do
           {:feature, [var: Const.xmlns_disco_info], []},
           {:feature, [var: Const.xmlns_disco_items], []},
           {:feature, [var: Const.xmlns_ping], []},
+          {:feature, [var: Const.xmlns_vcard], []},
+          {:feature, [var: Const.xmlns_version], []},
         ]
       )
     )
@@ -48,7 +50,7 @@ defmodule Egapp.XMPP.Stanza do
       'result',
       Element.query(
         [xmlns: Const.xmlns_roster],
-        [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
+        [{:item, [jid: 'alice@localhost', subscription: 'both'], []}]
       ),
       from: 'foo@localhost'
     )
@@ -81,12 +83,30 @@ defmodule Egapp.XMPP.Stanza do
     )
   end
 
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_version}, _data}]}) do
+    iq(
+      attrs["id"],
+      'result',
+      Element.query(
+        [xmlns: Const.xmlns_version],
+        [
+          {:name, ['egapp']},
+          {:version, ['1.0.0']}
+        ]
+      ),
+      from: attrs["to"]
+    )
+  end
+
   def iq({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}) do
-    iq(attrs["id"], 'result', {
-      :vCard,
-      [xmlns: 'vcard-temp'],
-      []
-    })
+    iq(attrs["id"], 'result',
+      {
+        :vCard,
+        [xmlns: 'vcard-temp'],
+        []
+      },
+      from: attrs["to"]
+    )
   end
 
   def iq({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}) do
@@ -121,7 +141,7 @@ defmodule Egapp.XMPP.Stanza do
     {
       :message,
       [
-        from: 'alice@wonderland.lit/orchard',
+        from: 'alice@localhost/orchard',
         id: '#{attrs["id"]}',
         to: 'foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
         type: 'chat',
