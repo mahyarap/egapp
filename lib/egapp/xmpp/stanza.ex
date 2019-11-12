@@ -1,4 +1,5 @@
 defmodule Egapp.XMPP.Stanza do
+  require Egapp.Constants, as: Const
   alias Egapp.XMPP.Element
 
   def iq(id, type, content \\ nil) do
@@ -15,33 +16,33 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => "http://jabber.org/protocol/disco#items"}, data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_items}, data}]}
       ) do
-    iq(attrs["id"], 'result', Element.query(xmlns: "http://jabber.org/protocol/disco#items"))
+    iq(attrs["id"], 'result', Element.query(xmlns: Const.xmlns_disco_items))
   end
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => "http://jabber.org/protocol/disco#info"}, data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_info}, data}]}
       ) do
     iq(
       attrs["id"],
       'result',
       Element.query(
-        [xmlns: "http://jabber.org/protocol/disco#info"],
+        [xmlns: Const.xmlns_disco_info],
         [{:identity, [category: 'server', type: 'im'], []}]
       )
     )
   end
 
   def iq(
-        {%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => "jabber:iq:roster"}, data}]}
+        {%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_roster}, data}]}
       ) do
     iq(
       attrs["id"],
       'result',
       Element.query(
-        [xmlns: "http://jabber.org/protocol/disco#info"],
+        [xmlns: Const.xmlns_disco_info],
         [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
       )
     )
@@ -49,13 +50,13 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => "http://jabber.org/protocol/bytestreams"}, data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_bytestreams}, data}]}
       ) do
     iq(
       attrs["id"],
       'result',
       Element.query(
-        [xmlns: "http://jabber.org/protocol/disco#info"],
+        [xmlns: Const.xmlns_disco_info],
         [
           {
             :error,

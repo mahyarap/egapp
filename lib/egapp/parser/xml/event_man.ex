@@ -1,13 +1,10 @@
 defmodule Egapp.Parser.XML.EventMan do
   require Logger
+  require Egapp.Constants, as: Const
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Element
 
   @behaviour GenServer
-
-  @xmlns_stream "http://etherx.jabber.org/streams"
-  @xmlns_c2s "jabber:client"
-  @xmpp_version "1.0"
 
   @impl true
   def init(args) do
@@ -22,7 +19,7 @@ defmodule Egapp.Parser.XML.EventMan do
 
   @impl true
   def handle_call(
-        {"stream:stream", %{"xmlns:stream" => @xmlns_stream, "version" => @xmpp_version} = attrs},
+        {"stream:stream", %{"xmlns:stream" => Const.xmlns_stream, "version" => Const.xmpp_version} = attrs},
         _from,
         state
       ) do
@@ -52,7 +49,7 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   def handle_call(
-        {"stream:stream", %{"xmlns:stream" => _, "version" => @xmpp_version} = attrs},
+        {"stream:stream", %{"xmlns:stream" => _, "version" => Const.xmpp_version} = attrs},
         _from,
         state
       ) do
@@ -88,7 +85,7 @@ defmodule Egapp.Parser.XML.EventMan do
   def handle_call({"stream:stream", attrs}, _from, state) do
     resp =
       cond do
-        Map.get(attrs, "xmlns:stream") != @xmlns_stream ->
+        Map.get(attrs, "xmlns:stream") != Const.xmlns_stream ->
           """
           <stream:error>
           <invalid-namespace

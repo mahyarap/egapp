@@ -1,4 +1,5 @@
 defmodule Egapp.XMPP.Element do
+  require Egapp.Constants, as: Const
   alias Egapp.XMPP.Stanza
 
   @doc """
@@ -25,7 +26,7 @@ defmodule Egapp.XMPP.Element do
 
     {
       :bind,
-      [xmlns: 'urn:ietf:params:xml:ns:xmpp-bind'],
+      [xmlns: Const.xmlns_bind],
       content
     }
   end
@@ -37,7 +38,7 @@ defmodule Egapp.XMPP.Element do
   def mechanisms do
     {
       :mechanisms,
-      [xmlns: 'urn:ietf:params:xml:ns:xmpp-sasl'],
+      [xmlns: Const.xmlns_sasl],
       [
         # Server preference order
         {:mechanism, ['ANONYMOUS']},
@@ -49,7 +50,7 @@ defmodule Egapp.XMPP.Element do
   def success do
     {
       :success,
-      [xmlns: 'urn:ietf:params:xml:ns:xmpp-sasl'],
+      [xmlns: Const.xmlns_sasl],
       []
     }
   end
@@ -60,7 +61,7 @@ defmodule Egapp.XMPP.Element do
   def session do
     {
       :session,
-      [xmlns: 'urn:ietf:params:xml:ns:xmpp-session'],
+      [xmlns: Const.xmlns_session],
       []
     }
   end
