@@ -146,7 +146,9 @@ defmodule Egapp.Parser.XML.EventMan do
   end
   def handle_call({"iq", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect {"iq", attrs, data}}")
-    resp = IqStanza.handle({attrs, data})
+    resp =
+      Egapp.XMPP.Stanza.iq({attrs, data})
+      |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
@@ -155,17 +157,10 @@ defmodule Egapp.Parser.XML.EventMan do
     # apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
-  def handle_call({"message", attrs, _data}, _from, state) do
-    resp = """
-    <message
-        from='bar@localhost/orchard'
-        id='#{attrs["id"]}'
-        to='foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'
-        type='chat'
-        xml:lang='en'>
-      <body>Neither, fair saint, if either thee dislike.</body>
-    </message>\
-    """
+  def handle_call({"message", attrs, data}, _from, state) do
+    resp =
+      Egapp.XMPP.Stanza.message({attrs, data})
+      |>:xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
@@ -183,116 +178,5 @@ defmodule Egapp.Parser.XML.EventMan do
 
   defp prepend_xml_decl(content) do
     ['<?xml version="1.0"?>' | content]
-  end
-end
-
-defmodule IqStanza do
-  alias Egapp.XMPP.Stanza
-  alias Egapp.XMPP.Element
-
-  def handle({%{"type" => "get"} = attrs, [{:xmlel, "query", child_attrs, data}]}) do
-    QueryStanza.handle({to_map(child_attrs), data, attrs})
-  end
-  def handle({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}) do
-    Stanza.iq(attrs["id"], 'result',
-      {
-        :vCard,
-        [xmlns: 'vcard-temp'],
-        []
-      }
-    )
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-  def handle({%{"type" => "set"} = attrs, [{:xmlel, "query", _child_attrs, _data}]}) do
-    """
-    <iq type='result' id='#{attrs["id"]}'/>
-    """
-  end
-  def handle({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}) do
-    Stanza.iq(attrs["id"], 'result')
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-  def handle({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}) do
-    Stanza.iq(attrs["id"], 'result', Element.bind('foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-  def handle({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}) do
-    Stanza.iq(attrs["id"], 'result')
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-
-  defp to_map(attrs) do
-    Enum.into(attrs, %{})
-  end
-end
-
-defmodule QueryStanza do
-  alias Egapp.XMPP.Stanza
-
-  def handle({%{"xmlns" => "jabber:iq:auth"}, [{:xmlel, "username", attrs, data}], state}) do
-    IO.inspect {attrs, data, state}
-    """
-    <iq type='result' id='#{state["id"]}'>
-    <query xmlns='jabber:iq:auth'>
-    <username/>
-    <password/>
-    <resource/>
-    </query>
-    </iq>
-    """
-  end
-  def handle({%{"xmlns" => "http://jabber.org/protocol/disco#items"}, [], state}) do
-    Stanza.iq(state["id"], 'result',
-      {
-        :query,
-        [xmlns: 'http://jabber.org/protocol/disco#items'],
-        []
-      }
-    )
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-  def handle({%{"xmlns" => "http://jabber.org/protocol/disco#info"}, [], %{"to" => "localhost"} = state}) do
-    Stanza.iq(state["id"], 'result',
-      {
-        :query,
-        [xmlns: 'http://jabber.org/protocol/disco#info'],
-        [{:identity, [category: 'server', type: 'im'], []}]
-      }
-    )
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-  def handle({%{"xmlns" => "jabber:iq:roster"}, [], state}) do
-    # Stanza.iq(state["id"], 'result',
-    #   {
-    #     :query,
-    #     [xmlns: 'jabber:iq:roster'],
-    #     [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
-    #   }
-    # )
-    {
-      :iq,
-      [id: state["id"], type: 'result', to: 'foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'],
-      [
-        {
-          :query,
-          [xmlns: 'jabber:iq:roster'],
-          [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
-        }
-      ]
-    }
-    |> :xmerl.export_simple_element(:xmerl_xml)
-  end
-  def handle({%{"xmlns" => "http://jabber.org/protocol/bytestreams"}, [], state}) do
-    """
-    <iq from="proxy.eu.jabber.org"
-    id='#{state["id"]}'
-    to="foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb"
-    type='error'>
-    <error type='cancel'>
-      <feature-not-implemented
-          xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>
-    </error>
-    </iq>\
-    """
   end
 end

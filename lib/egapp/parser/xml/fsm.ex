@@ -41,7 +41,6 @@ defmodule Egapp.Parser.XML.FSM do
       :continue -> {:next_state, :xml_stream_start, state}
       :stop -> {:stop, :normal, state}
     end
-    # {:next_state, :xml_stream_start, state}
   end
 
   def begin({:xmlstreamerror, error}, state) do
