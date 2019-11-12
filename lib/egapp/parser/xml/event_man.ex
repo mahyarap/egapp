@@ -146,8 +146,13 @@ defmodule Egapp.Parser.XML.EventMan do
   end
   def handle_call({"iq", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect {"iq", attrs, data}}")
+    child_node =
+      case data do
+        [{:xmlel, tag_name, child_attrs, child_data}] ->
+          [{:xmlel, tag_name, to_map(child_attrs), child_data}]
+      end
     resp =
-      Egapp.XMPP.Stanza.iq({attrs, data})
+      Egapp.XMPP.Stanza.iq({attrs, child_node})
       |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
@@ -178,5 +183,9 @@ defmodule Egapp.Parser.XML.EventMan do
 
   defp prepend_xml_decl(content) do
     ['<?xml version="1.0"?>' | content]
+  end
+
+  defp to_map(attrs) do
+    Enum.into(attrs, %{})
   end
 end

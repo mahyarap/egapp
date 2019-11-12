@@ -12,8 +12,52 @@ defmodule Egapp.XMPP.Stanza do
       end
     }
   end
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", child_attrs, data}]}) do
-    Element.query({to_map(child_attrs), data, attrs})
+  def iq({%{"type" => "get"} = attrs,
+    [{:xmlel, "query", %{"xmlns" => "http://jabber.org/protocol/disco#items"}, data}]})
+  do
+    iq(attrs["id"], 'result', Element.query([xmlns: "http://jabber.org/protocol/disco#items"]))
+  end
+  def iq({%{"type" => "get"} = attrs,
+    [{:xmlel, "query", %{"xmlns" => "http://jabber.org/protocol/disco#info"}, data}]})
+  do
+    iq(attrs["id"], 'result',
+      Element.query(
+        [xmlns: "http://jabber.org/protocol/disco#info"],
+        [{:identity, [category: 'server', type: 'im'], []}]
+      )
+    )
+  end
+  def iq({%{"type" => "get"} = attrs,
+    [{:xmlel, "query", %{"xmlns" => "jabber:iq:roster"}, data}]})
+  do
+    iq(attrs["id"], 'result', 
+      Element.query(
+        [xmlns: "http://jabber.org/protocol/disco#info"],
+        [{:item, [jid: 'alice@wonderland.lit', subscription: 'both'], []}]
+      )
+    )
+  end
+  def iq({%{"type" => "get"} = attrs,
+    [{:xmlel, "query", %{"xmlns" => "http://jabber.org/protocol/bytestreams"}, data}]})
+  do
+    iq(attrs["id"], 'result', 
+      Element.query(
+        [xmlns: "http://jabber.org/protocol/disco#info"],
+        [
+          {
+            :error,
+            [type: 'cancel'],
+            [
+              {
+                :"feature-not-implemented",
+                [xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'],
+                []
+              }
+            ]
+          }
+        ]
+      )
+    )
   end
   def iq({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}) do
     iq(attrs["id"], 'result',
@@ -24,13 +68,13 @@ defmodule Egapp.XMPP.Stanza do
       }
     )
   end
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}) do
+    iq(attrs["id"], 'result')
+  end
   def iq({%{"type" => "set"} = attrs, [{:xmlel, "query", _child_attrs, _data}]}) do
     """
     <iq type='result' id='#{attrs["id"]}'/>
     """
-  end
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}) do
-    iq(attrs["id"], 'result')
   end
   def iq({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}) do
     iq(attrs["id"], 'result', Element.bind('foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
