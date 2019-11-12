@@ -37,8 +37,11 @@ defmodule Egapp.Parser.XML.FSM do
 
   def begin({:xmlstreamstart, tag_name, attrs}, state) do
     Logger.debug("c2s: #{inspect {:begin, tag_name, attrs, state}}")
-    GenServer.call(state.event_man, {tag_name, to_map(attrs)})
-    {:next_state, :xml_stream_start, state}
+    case GenServer.call(state.event_man, {tag_name, to_map(attrs)}) do
+      :continue -> {:next_state, :xml_stream_start, state}
+      :stop -> {:stop, :normal, state}
+    end
+    # {:next_state, :xml_stream_start, state}
   end
 
   def begin({:xmlstreamerror, error}, state) do

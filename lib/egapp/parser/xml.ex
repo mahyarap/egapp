@@ -2,29 +2,37 @@ defmodule Egapp.Parser.XML do
   alias Egapp.Parser.XML.EventMan
   alias Egapp.Parser.XML.FSM
 
-  @behaviour Egapp.Parser
+  @behaviour GenServer
 
-  @impl Egapp.Parser
-  def parse(conn) do
+  @impl true
+  def init(conn) do
     {:ok, pid} = GenServer.start_link(EventMan, [to: conn, mod: Egapp.Server])
     {:ok, pid} = :gen_fsm.start_link(FSM, [event_man: pid], [])
+    Process.monitor(pid)
     stream = :fxml_stream.new(pid, :infinity, [])
-    loop(conn, stream, pid)
+    {:ok, %{fsm: pid, stream: stream, conn: conn}}
   end
 
-  defp loop(conn, stream, fsm) do
-    case Egapp.Server.recv(conn) do
-      {:ok, packet} ->
-        case :sys.get_state(fsm) do
-          {:begin, _} ->
-            :fxml_stream.reset(stream)
-            :fxml_stream.parse(stream, packet)
-          _ ->
-            :fxml_stream.parse(stream, packet)
-        end
-      {:error, :closed} -> exit(:normal)
-      _ -> raise("recv read")
+  def parse(parser, data) do
+    GenServer.cast(parser, data)
+  end
+
+  @impl true
+  def handle_cast(data, state) do
+    case :sys.get_state(state.fsm) do
+      {:begin, _} ->
+        :fxml_stream.reset(state.stream)
+        :fxml_stream.parse(state.stream, data)
+      _ ->
+        :fxml_stream.parse(state.stream, data)
     end
-    loop(conn, stream, fsm)
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(msg, state) do
+    IO.inspect {msg, state}
+    :gen_tcp.close(state.conn)
+    {:stop, :normal, state}
   end
 end

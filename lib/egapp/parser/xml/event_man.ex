@@ -63,7 +63,7 @@ defmodule Egapp.Parser.XML.EventMan do
       Stream.stream(id, from: Map.get(attrs, "from"), content: content)
       |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, prepend_xml_decl(resp)])
-    {:reply, :stop, state}
+    {:stop, :normal, :stop, state}
   end
   def handle_call({"stream:stream", %{"xmlns:stream" => _, "version" => _} = attrs},
     _from,
