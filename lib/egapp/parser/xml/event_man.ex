@@ -188,9 +188,8 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   def handle_call({"message", attrs, data}, _from, state) do
-    resp =
-      Egapp.XMPP.Stanza.message({attrs, data})
-      |> :xmerl.export_simple_element(:xmerl_xml)
+    resp = Egapp.XMPP.Stanza.message({attrs, data})
+    resp = if resp, do: :xmerl.export_simple_element(resp, :xmerl_xml), else: []
 
     apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
