@@ -183,7 +183,10 @@ defmodule Egapp.Parser.XML.EventMan do
 
   def handle_call({"presence", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"iq", attrs, data})}")
-    # apply(state.mod, :send, [state.to, resp])
+    resp =
+      Egapp.XMPP.Stanza.presence({attrs, data})
+      |> :xmerl.export_simple_element(:xmerl_xml)
+    apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
 

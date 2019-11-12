@@ -130,4 +130,16 @@ defmodule Egapp.XMPP.Stanza do
       [{:body, [String.to_charlist(msg)]}]
     }
   end
+
+  def presence({attrs, foo}) do
+    {
+      :presence,
+      [
+        # id: attrs["id"],
+        from: 'alice@localhost/hey',
+        to: 'foo@localhost'
+      ],
+      []
+    }
+  end
 end
