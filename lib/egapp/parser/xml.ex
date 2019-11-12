@@ -6,7 +6,7 @@ defmodule Egapp.Parser.XML do
 
   @impl true
   def init(conn) do
-    {:ok, event_man} = GenServer.start_link(EventMan, [to: conn, mod: Egapp.Server])
+    {:ok, event_man} = GenServer.start_link(EventMan, to: conn, mod: Egapp.Server)
     {:ok, fsm} = :gen_fsm.start_link(FSM, [event_man: event_man], [])
     Process.monitor(fsm)
     stream = :fxml_stream.new(fsm, :infinity, [])
@@ -23,9 +23,11 @@ defmodule Egapp.Parser.XML do
       {:begin, _} ->
         :fxml_stream.reset(state.stream)
         :fxml_stream.parse(state.stream, data)
+
       _ ->
         :fxml_stream.parse(state.stream, data)
     end
+
     {:noreply, state}
   end
 
@@ -34,6 +36,7 @@ defmodule Egapp.Parser.XML do
     case msg do
       {:DOWN, _, :process, _, _} -> :gen_tcp.close(state.conn)
     end
+
     {:stop, :normal, state}
   end
 end

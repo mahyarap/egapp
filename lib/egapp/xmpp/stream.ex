@@ -17,8 +17,9 @@ defmodule Egapp.XMPP.Stream do
       version: '1.0',
       "xml:lang": Keyword.get(opts, :lang) || 'en',
       xmlns: 'jabber:client',
-      "xmlns:stream": 'http://etherx.jabber.org/streams',
+      "xmlns:stream": 'http://etherx.jabber.org/streams'
     ]
+
     {from, opts} = Keyword.pop(opts, :from)
     attrs = if from, do: [{:to, from} | attrs], else: attrs
 

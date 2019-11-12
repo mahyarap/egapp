@@ -21,11 +21,14 @@ defmodule Egapp.Server do
   defp loop(socket, args) do
     parser = Keyword.fetch!(args, :parser)
     conn = accept(socket)
-    {:ok, _} = Task.Supervisor.start_child(Egapp.ConnectionSupervisor, fn ->
-      {:ok, pid} = GenServer.start_link(parser, conn)
-      :gen_tcp.controlling_process(conn, pid)
-      recv_loop(conn, parser, pid)
-    end)
+
+    {:ok, _} =
+      Task.Supervisor.start_child(Egapp.ConnectionSupervisor, fn ->
+        {:ok, pid} = GenServer.start_link(parser, conn)
+        :gen_tcp.controlling_process(conn, pid)
+        recv_loop(conn, parser, pid)
+      end)
+
     loop(socket, args)
   end
 
@@ -34,9 +37,12 @@ defmodule Egapp.Server do
       {:ok, packet} ->
         parser.parse(pid, packet)
         recv_loop(conn, parser, pid)
+
       {:error, :closed} ->
         Process.exit(pid, :normal)
-      _ -> IO.puts "GGGGGGGG"
+
+      _ ->
+        IO.puts("GGGGGGGG")
     end
   end
 
@@ -53,8 +59,9 @@ defmodule Egapp.Server do
       reuseaddr: true,
       # See man 7 tcp (TCP_NODELAY)
       nodelay: true,
-      keepalive: true,
+      keepalive: true
     ]
+
     {:ok, socket} = :gen_tcp.listen(port, conn_opts)
     socket
   end

@@ -7,27 +7,29 @@ defmodule Egapp.Parser.XML.FSM do
   def init(args) do
     event_man = Keyword.fetch!(args, :event_man)
     init_state = Keyword.get(args, :init_state, :begin)
+
     state = %{
-      event_man: event_man,
+      event_man: event_man
     }
+
     {:ok, init_state, state}
   end
 
   @impl true
   def handle_info(info, state, data) do
-    IO.inspect {info, state, data}
+    IO.inspect({info, state, data})
   end
 
   @impl true
   def handle_event({:xmlstreamcdata, data}, current_state, state_data) do
     # TODO
-    Logger.debug("c2s: #{inspect {:xml_stream_cdata, data, current_state, state_data}}")
+    Logger.debug("c2s: #{inspect({:xml_stream_cdata, data, current_state, state_data})}")
     {:next_state, current_state, state_data}
   end
 
   @impl true
   def handle_sync_event(a, b, c, d) do
-    IO.inspect {a, b, c, d}
+    IO.inspect({a, b, c, d})
     {a, b, c, d}
   end
 
@@ -36,7 +38,8 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def begin({:xmlstreamstart, tag_name, attrs}, state) do
-    Logger.debug("c2s: #{inspect {:begin, tag_name, attrs, state}}")
+    Logger.debug("c2s: #{inspect({:begin, tag_name, attrs, state})}")
+
     case GenServer.call(state.event_man, {tag_name, to_map(attrs)}) do
       :continue -> {:next_state, :xml_stream_start, state}
       :stop -> {:stop, :normal, state}
@@ -44,64 +47,66 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def begin({:xmlstreamerror, error}, state) do
-    IO.inspect {:xml_stream_error, error, state}
+    IO.inspect({:xml_stream_error, error, state})
     GenServer.call(state.event_man, {"error:parsing", error})
     {:stop, :normal, state}
   end
 
   def xml_stream_start({:xmlstreamelement, tag_name, attrs}, state) do
-    IO.inspect {:xml_stream_element, tag_name, attrs, state}
+    IO.inspect({:xml_stream_element, tag_name, attrs, state})
     {:next_state, :xml_stream_element, state}
   end
 
   def xml_stream_start({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
-    IO.inspect {:xml_stream_element, child, to_map(attrs), data, state}
+    IO.inspect({:xml_stream_element, child, to_map(attrs), data, state})
+
     next_state =
       case GenServer.call(state.event_man, {child, to_map(attrs), data}) do
         :reset -> :begin
         _ -> :xml_stream_element
       end
+
     {:next_state, next_state, state}
   end
 
   def xml_stream_start({:xmlstreamend, tag_name}, state) do
-    IO.inspect {:xml_stream_end, tag_name, state}
+    IO.inspect({:xml_stream_end, tag_name, state})
     {:next_state, :xml_stream_start, state}
   end
 
   def xml_stream_start({:xmlstreamerror, foo}, state) do
-    IO.inspect {:xmlstreamerror, foo, state}
+    IO.inspect({:xmlstreamerror, foo, state})
   end
 
   def xml_stream_end({:xmlstreamend, data}, state) do
-    IO.inspect {:xml_end, data, state}
+    IO.inspect({:xml_end, data, state})
     {:next_state, :xml_stream_start, state}
   end
 
   def xml_stream_element({:xmlstreamcdata, data}, state) do
-    IO.inspect {:xml_stream_cdata, data, state}
+    IO.inspect({:xml_stream_cdata, data, state})
     {:next_state, :xml_stream_cdata, state}
   end
 
   def xml_stream_element({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
-    IO.inspect {:xml_stream_element, child, attrs, data, state}
+    IO.inspect({:xml_stream_element, child, attrs, data, state})
     GenServer.call(state.event_man, {child, to_map(attrs), data})
     {:next_state, :xml_stream_element, state}
   end
 
   def xml_stream_element({:xmlstreamend, tag_name}, state) do
-    IO.inspect {:xml_stream_end, tag_name, state}
+    IO.inspect({:xml_stream_end, tag_name, state})
     GenServer.call(:event_man, :read)
     {:next_state, :begin, state}
   end
 
   def xml_stream_cdata({:xmlstreamelement, tag_name, attrs}, state) do
-    IO.inspect {:xml_stream_element, tag_name, attrs, state}
+    IO.inspect({:xml_stream_element, tag_name, attrs, state})
     {:next_state, :xml_stream_element, state}
   end
 
   def xml_stream_cdata({:xmlstreamelement, tag_name}, state) do
-    IO.inspect {:xml_stream_element, tag_name, state}
+    IO.inspect({:xml_stream_element, tag_name, state})
     {:next_state, :xml_stream_element, state}
   end
 end
