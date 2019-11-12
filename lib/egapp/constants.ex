@@ -38,15 +38,15 @@ end
 defmodule Egapp.Constants do
   use Constants
 
-  const xmlns_stream,      "http://etherx.jabber.org/streams"
-  const xmlns_c2s,         "jabber:client"
-  const xmlns_disco_items, "http://jabber.org/protocol/disco#items"
-  const xmlns_disco_info,  "http://jabber.org/protocol/disco#info"
-  const xmlns_roster,      "jabber:iq:roster"
-  const xmlns_bytestreams, "http://jabber.org/protocol/bytestreams"
   const xmlns_bind,        "urn:ietf:params:xml:ns:xmpp-bind"
+  const xmlns_bytestreams, "http://jabber.org/protocol/bytestreams"
+  const xmlns_c2s,         "jabber:client"
+  const xmlns_disco_info,  "http://jabber.org/protocol/disco#info"
+  const xmlns_disco_items, "http://jabber.org/protocol/disco#items"
+  const xmlns_ping,        "urn:xmpp:ping"
+  const xmlns_roster,      "jabber:iq:roster"
   const xmlns_sasl,        "urn:ietf:params:xml:ns:xmpp-sasl"
   const xmlns_session,     "urn:ietf:params:xml:ns:xmpp-session"
-
+  const xmlns_stream,      "http://etherx.jabber.org/streams"
   const xmpp_version,      "1.0"
 end

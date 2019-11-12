@@ -30,7 +30,12 @@ defmodule Egapp.XMPP.Stanza do
       'result',
       Element.query(
         [xmlns: Const.xmlns_disco_info],
-        [{:identity, [category: 'server', type: 'im'], []}]
+        [
+          {:identity, [category: 'server', type: 'im'], []},
+          {:feature, [var: Const.xmlns_disco_info], []},
+          {:feature, [var: Const.xmlns_disco_items], []},
+          {:feature, [var: Const.xmlns_ping], []},
+        ]
       )
     )
   end
