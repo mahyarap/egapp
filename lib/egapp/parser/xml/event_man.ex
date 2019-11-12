@@ -19,10 +19,6 @@ defmodule Egapp.Parser.XML.EventMan do
     {:ok, state}
   end
 
-  defp prepend_xml_decl(content) do
-    ['<?xml version="1.0"?>' | content]
-  end
-
   @impl true
   def handle_call({"stream:stream",
     %{"xmlns:stream" => @xmlns_stream, "version" => @xmpp_version} = attrs},
@@ -60,7 +56,7 @@ defmodule Egapp.Parser.XML.EventMan do
     content = Stream.invalid_namespace_error()
 
     resp =
-      Stream.stream(id, from: Map.get(attrs, "from"), content: content)
+      Stream.stream(id, from: Map.get(attrs, "from"), lang: lang, content: content)
       |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, prepend_xml_decl(resp)])
     {:stop, :normal, :stop, state}
@@ -74,12 +70,12 @@ defmodule Egapp.Parser.XML.EventMan do
     content = Stream.unsupported_version_error()
 
     resp =
-      Stream.stream(id, from: Map.get(attrs, "from"), content: content)
+      Stream.stream(id, from: Map.get(attrs, "from"), lang: lang, content: content)
       |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
     {:reply, :stop, state}
   end
-  def handle_call({"stream:stream", attrs}, state) do
+  def handle_call({"stream:stream", attrs}, _from, state) do
     resp =
     cond do
       Map.get(attrs, "xmlns:stream") != @xmlns_stream ->
@@ -110,7 +106,7 @@ defmodule Egapp.Parser.XML.EventMan do
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
   end
-  def handle_call({"stream", _attrs}, state) do
+  def handle_call({"stream", _attrs}, _from, state) do
     resp = """
     <stream:error>
     <bad-namespace-prefix
@@ -120,7 +116,7 @@ defmodule Egapp.Parser.XML.EventMan do
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
   end
-  def handle_call({"error:parsing", error}, state) do
+  def handle_call({"error:parsing", error}, _from, state) do
     resp =
     case error do
       {4, "not well-formed (invalid token)"} ->
@@ -173,7 +169,7 @@ defmodule Egapp.Parser.XML.EventMan do
     apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
-  def handle_call({_tag_name, _attrs}, state) do
+  def handle_call({_tag_name, _attrs}, _from, state) do
     resp = """
     <stream:error>
     <invalid-xml
@@ -184,6 +180,10 @@ defmodule Egapp.Parser.XML.EventMan do
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
   end
+
+  defp prepend_xml_decl(content) do
+    ['<?xml version="1.0"?>' | content]
+  end
 end
 
 defmodule IqStanza do
@@ -193,7 +193,7 @@ defmodule IqStanza do
   def handle({%{"type" => "get"} = attrs, [{:xmlel, "query", child_attrs, data}]}) do
     QueryStanza.handle({to_map(child_attrs), data, attrs})
   end
-  def handle({%{"type" => "get"} = attrs, [{:xmlel, "vCard", child_attrs, data}]}) do
+  def handle({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}) do
     Stanza.iq(attrs["id"], 'result',
       {
         :vCard,
@@ -203,20 +203,20 @@ defmodule IqStanza do
     )
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
-  def handle({%{"type" => "set"} = attrs, [{:xmlel, "query", child_attrs, data}]}) do
+  def handle({%{"type" => "set"} = attrs, [{:xmlel, "query", _child_attrs, _data}]}) do
     """
     <iq type='result' id='#{attrs["id"]}'/>
     """
   end
-  def handle({%{"type" => "get"} = attrs, [{:xmlel, "ping", child_attrs, data}]}) do
+  def handle({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}) do
     Stanza.iq(attrs["id"], 'result')
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
-  def handle({%{"type" => "set"} = attrs, [{:xmlel, "bind", child_attrs, data}]}) do
+  def handle({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}) do
     Stanza.iq(attrs["id"], 'result', Element.bind('foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
-  def handle({%{"type" => "set"} = attrs, [{:xmlel, "session", child_attrs, data}]}) do
+  def handle({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}) do
     Stanza.iq(attrs["id"], 'result', Element.session())
     |> :xmerl.export_simple_element(:xmerl_xml)
   end
@@ -228,7 +228,6 @@ end
 
 defmodule QueryStanza do
   alias Egapp.XMPP.Stanza
-  alias Egapp.XMPP.Element
 
   def handle({%{"xmlns" => "jabber:iq:auth"}, [{:xmlel, "username", attrs, data}], state}) do
     IO.inspect {attrs, data, state}
