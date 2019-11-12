@@ -30,9 +30,9 @@ defmodule Egapp.Parser.XML.EventMan do
     id = Enum.random(10_000_000..99_999_999)
     features =
         if Map.get(state.client_props, :is_authenticated) do
-          Element.bind()
+          [Element.bind(), Element.session()]
         else
-          Element.mechanisms()
+          [Element.mechanisms()]
         end
     content = Element.features(features)
 

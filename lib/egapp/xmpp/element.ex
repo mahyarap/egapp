@@ -5,7 +5,7 @@ defmodule Egapp.XMPP.Element do
   def features(content) do
     {
       :"stream:features",
-      [content]
+      content
     }
   end
 
