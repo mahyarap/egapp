@@ -37,6 +37,7 @@ defmodule Egapp.XMPP.Stanza do
           {:feature, [var: Const.xmlns_ping], []},
           {:feature, [var: Const.xmlns_vcard], []},
           {:feature, [var: Const.xmlns_version], []},
+          {:feature, [var: Const.xmlns_last], []},
         ]
       )
     )
@@ -94,6 +95,36 @@ defmodule Egapp.XMPP.Stanza do
           {:version, ['1.0.0']}
         ]
       ),
+      from: attrs["to"]
+    )
+  end
+
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_last}, _data}]}) do
+    iq(
+      attrs["id"],
+      'result',
+      Element.query(
+        [xmlns: Const.xmlns_last, seconds: 3650],
+        []
+      ),
+      from: attrs["to"]
+    )
+  end
+
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "time", %{"xmlns" => Const.xmlns_time}, _data}]}) do
+    {:ok, now} = DateTime.now("Etc/UTC")
+    iso_time = DateTime.to_iso8601(now)
+    iq(
+      attrs["id"],
+      'result',
+      {
+        :time,
+        [xmlns: Const.xmlns_time],
+        [
+          {:tzo, ['+00:00']},
+          {:utc, [String.to_charlist(iso_time)]}
+        ]
+      },
       from: attrs["to"]
     )
   end
@@ -156,7 +187,7 @@ defmodule Egapp.XMPP.Stanza do
       :presence,
       [
         # id: attrs["id"],
-        from: 'alice@localhost/hey',
+        from: 'alice@localhost/android',
         to: 'foo@localhost'
       ],
       []
