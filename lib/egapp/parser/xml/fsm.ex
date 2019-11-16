@@ -23,7 +23,7 @@ defmodule Egapp.Parser.XML.FSM do
   @impl true
   def handle_event({:xmlstreamcdata, data}, current_state, state_data) do
     # TODO
-    Logger.debug("c2s: #{inspect({:xml_stream_cdata, data, current_state, state_data})}")
+    Logger.debug("fsm: #{inspect({:xml_stream_cdata, data, current_state, state_data})}")
     {:next_state, current_state, state_data}
   end
 
@@ -38,7 +38,7 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def begin({:xmlstreamstart, tag_name, attrs}, state) do
-    Logger.debug("c2s: #{inspect({:begin, tag_name, attrs, state})}")
+    Logger.debug("fsm: #{inspect({:begin, tag_name, attrs, state})}")
 
     case GenServer.call(state.event_man, {tag_name, to_map(attrs)}) do
       :continue -> {:next_state, :xml_stream_start, state}
@@ -61,7 +61,7 @@ defmodule Egapp.Parser.XML.FSM do
     IO.inspect({:xml_stream_element, child, to_map(attrs), data, state})
 
     next_state =
-      case GenServer.call(state.event_man, {child, to_map(attrs), data}) do
+      case GenServer.call(state.event_man, {child, to_map(attrs), remove_whitespace(data)}) do
         :reset -> :begin
         _ -> :xml_stream_element
       end
@@ -90,7 +90,7 @@ defmodule Egapp.Parser.XML.FSM do
 
   def xml_stream_element({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
     IO.inspect({:xml_stream_element, child, attrs, data, state})
-    GenServer.call(state.event_man, {child, to_map(attrs), data})
+    GenServer.call(state.event_man, {child, to_map(attrs), remove_whitespace(data)})
     {:next_state, :xml_stream_element, state}
   end
 
@@ -108,5 +108,24 @@ defmodule Egapp.Parser.XML.FSM do
   def xml_stream_cdata({:xmlstreamelement, tag_name}, state) do
     IO.inspect({:xml_stream_element, tag_name, state})
     {:next_state, :xml_stream_element, state}
+  end
+
+  defp remove_whitespace(data) do
+    do_remove_whitespace(data, [])
+  end
+
+  defp do_remove_whitespace([h | t], result) when is_list(h) do
+    do_remove_whitespace(t, [do_remove_whitespace(h, []) | result])
+  end
+
+  defp do_remove_whitespace([h | t], result) do
+    case h do
+      {:xmlcdata, "\n"} -> do_remove_whitespace(t, result)
+      _ -> do_remove_whitespace(t, [h | result])
+    end
+  end
+
+  defp do_remove_whitespace([], result) do
+    result |> Enum.reverse()
   end
 end
