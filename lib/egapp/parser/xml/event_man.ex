@@ -155,11 +155,13 @@ defmodule Egapp.Parser.XML.EventMan do
     {:stop, :normal, state}
   end
 
-  def handle_call({"auth", attrs, data}, _from, state) do
+  def handle_call({"auth", attrs, [xmlcdata: data]}, _from, state) do
     Logger.debug("c2s: #{inspect({"auth", attrs, data})}")
-    IO.inspect(Egapp.SASL.authenticate!(attrs["mechanism"], Keyword.fetch!(data, :xmlcdata)))
-    state = Map.put(state, :client_props, Map.put(state.client_props, :is_authenticated, true))
-    resp = :xmerl.export_simple_element(Element.success(), :xmerl_xml)
+    Egapp.SASL.authenticate!(attrs["mechanism"], data)
+    state = put_in(state, [:client_props, :is_authenticated], true)
+    resp =
+      Element.success()
+      |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
     {:reply, :reset, state}
   end
