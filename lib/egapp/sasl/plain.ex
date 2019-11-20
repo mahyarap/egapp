@@ -1,4 +1,6 @@
 defmodule Egapp.SASL.Plain do
+  require Ecto.Query
+
   @behaviour Egapp.SASL
 
   @impl Egapp.SASL
@@ -8,9 +10,17 @@ defmodule Egapp.SASL.Plain do
       Base.decode64!(token)
       |> String.split(<<0::utf8>>)
       |> Enum.slice(1, 2)
+
     username = Enum.at(result, 0)
     password = Enum.at(result, 1)
-    {username, password}
-    Egapp.XMPP.Element.success()
+    user =
+      Ecto.Query.from(u in Egapp.Repo.User, where: u.username == ^username)
+      |> Egapp.Repo.one
+
+    if username == user.username and password == user.password do
+      Egapp.XMPP.Element.success()
+    else
+      Egapp.XMPP.Element.failure()
+    end
   end
 end

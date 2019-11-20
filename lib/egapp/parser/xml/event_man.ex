@@ -166,6 +166,7 @@ defmodule Egapp.Parser.XML.EventMan do
     action =
       case result do
         {:success, _, _} -> :reset
+        {:failure, _, _} -> :reset
         {:challenge, _, _} -> :continue
       end
     {:reply, action, state}

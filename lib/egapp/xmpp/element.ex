@@ -41,7 +41,7 @@ defmodule Egapp.XMPP.Element do
       [
         # Server preference order
         # {:mechanism, ['ANONYMOUS']},
-        {:mechanism, ['DIGEST-MD5']},
+        # {:mechanism, ['DIGEST-MD5']},
         {:mechanism, ['PLAIN']}
       ]
     }
@@ -60,6 +60,14 @@ defmodule Egapp.XMPP.Element do
       :success,
       [xmlns: Const.xmlns_sasl],
       []
+    }
+  end
+
+  def failure do
+    {
+      :failure,
+      [xmlns: Const.xmlns_sasl],
+      [{:"not-authorized", []}]
     }
   end
 
