@@ -40,9 +40,18 @@ defmodule Egapp.XMPP.Element do
       [xmlns: Const.xmlns_sasl],
       [
         # Server preference order
-        {:mechanism, ['ANONYMOUS']},
+        # {:mechanism, ['ANONYMOUS']},
+        {:mechanism, ['DIGEST-MD5']},
         {:mechanism, ['PLAIN']}
       ]
+    }
+  end
+
+  def challenge do
+    {
+      :challenge,
+      [xmlns: Const.xmlns_sasl],
+      ['cmVhbG09ImZvbyIsbm9uY2U9IjEyMyIsY2hhcnNldD11dGYtOCxhbGdvcml0aG09bWQ1LXNlc3MsY2lwaGVyPSJkZXMiCg==']
     }
   end
 

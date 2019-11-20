@@ -155,12 +155,70 @@ defmodule Egapp.Parser.XML.EventMan do
     {:stop, :normal, state}
   end
 
-  def handle_call({"auth", attrs, [xmlcdata: data]}, _from, state) do
+  def handle_call({"auth", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"auth", attrs, data})}")
-    Egapp.SASL.authenticate!(attrs["mechanism"], data)
+    result = Egapp.SASL.authenticate!(attrs["mechanism"], data)
     state = put_in(state, [:client_props, :is_authenticated], true)
     resp =
-      Element.success()
+      result
+      |> :xmerl.export_simple_element(:xmerl_xml)
+    apply(state.mod, :send, [state.to, resp])
+    action =
+      case result do
+        {:success, _, _} -> :reset
+        {:challenge, _, _} -> :continue
+      end
+    {:reply, action, state}
+  end
+
+  defp md5(iodata) do
+    :crypto.hash(:md5, iodata)
+  end
+
+  defp md5_hex(iodata) do
+    md5(iodata) |> Base.encode16(case: :lower)
+  end
+
+  def handle_call({"response", attrs, [xmlcdata: digest_response]}, _from, state) do
+    decoded =
+      digest_response
+      |> Base.decode64!()
+      |> String.split(",")
+      |> Enum.map(&String.split(&1, "=", parts: 2))
+      |> Map.new(fn [k, v] -> {k, String.trim(v, ~s("))} end)
+
+    IO.inspect decoded
+
+    a1 = [
+      md5([decoded["username"], ':', decoded["realm"], ':', 'bar']),
+      ':', decoded["nonce"], ':', decoded["cnonce"]
+    ]
+    a2 = ['AUTHENTICATE', ':', decoded["digest-uri"]]
+
+    response_value = md5_hex([
+      md5_hex(a1),
+      ':',
+      [decoded["nonce"], ':', decoded["nc"], ':', decoded["cnonce"], ':', decoded["qop"]],
+      ':',
+      md5_hex(a2)
+    ])
+
+    IO.inspect response_value
+
+    rspauth = md5_hex([
+      md5_hex(a1),
+      ':',
+      [decoded["nonce"], ':', decoded["nc"], ':', decoded["cnonce"], ':', decoded["qop"]],
+      md5_hex(tl(a2))
+    ])
+
+    result = {
+      :success,
+      [xmlns: Const.xmlns_sasl],
+      ["rspauth=" <> rspauth |> Base.encode64() |> String.to_charlist()]
+    }
+    resp =
+      result
       |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
     {:reply, :reset, state}
