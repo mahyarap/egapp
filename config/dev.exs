@@ -5,6 +5,6 @@ config :logger,
 
 config :egapp, Egapp.Repo,
   database: "egapp",
-  username: "user",
+  username: "egapp",
   password: "pass",
   hostname: "localhost"

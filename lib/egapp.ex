@@ -5,7 +5,8 @@ defmodule Egapp do
     children = [
       # Pass the parser to the server
       {Egapp.Server, [parser: Egapp.Parser.XML]},
-      {Task.Supervisor, name: Egapp.ConnectionSupervisor}
+      {Task.Supervisor, name: Egapp.ConnectionSupervisor},
+      {Egapp.Repo, []}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Egapp.Supervisor)
