@@ -171,46 +171,8 @@ defmodule Egapp.Parser.XML.EventMan do
     {:reply, action, state}
   end
 
-  defp md5(iodata) do
-    :crypto.hash(:md5, iodata)
-  end
-
-  defp md5_hex(iodata) do
-    md5(iodata) |> Base.encode16(case: :lower)
-  end
-
   def handle_call({"response", attrs, [xmlcdata: digest_response]}, _from, state) do
-    decoded =
-      digest_response
-      |> Base.decode64!()
-      |> String.split(",")
-      |> Enum.map(&String.split(&1, "=", parts: 2))
-      |> Map.new(fn [k, v] -> {k, String.trim(v, ~s("))} end)
-
-    IO.inspect decoded
-
-    a1 = [
-      md5([decoded["username"], ':', decoded["realm"], ':', 'bar']),
-      ':', decoded["nonce"], ':', decoded["cnonce"]
-    ]
-    a2 = ['AUTHENTICATE', ':', decoded["digest-uri"]]
-
-    response_value = md5_hex([
-      md5_hex(a1),
-      ':',
-      [decoded["nonce"], ':', decoded["nc"], ':', decoded["cnonce"], ':', decoded["qop"]],
-      ':',
-      md5_hex(a2)
-    ])
-
-    IO.inspect response_value
-
-    rspauth = md5_hex([
-      md5_hex(a1),
-      ':',
-      [decoded["nonce"], ':', decoded["nc"], ':', decoded["cnonce"], ':', decoded["qop"]],
-      md5_hex(tl(a2))
-    ])
+    rspauth = Egapp.SASL.Digest.validate_digest_response(digest_response)
 
     result = {
       :success,
