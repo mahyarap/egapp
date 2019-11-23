@@ -20,7 +20,9 @@ defmodule Egapp.SASL.Plain do
     if username == user.username and password == user.password do
       Egapp.XMPP.Element.success()
     else
-      Egapp.XMPP.Element.failure()
+      Egapp.XMPP.Element.failure({
+        :"not-authorized", []
+      })
     end
   end
 end

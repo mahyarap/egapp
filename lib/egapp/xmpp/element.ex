@@ -63,11 +63,11 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
-  def failure do
+  def failure(reason) do
     {
       :failure,
       [xmlns: Const.xmlns_sasl],
-      [{:"not-authorized", []}]
+      [reason]
     }
   end
 
