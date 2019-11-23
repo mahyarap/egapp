@@ -94,10 +94,9 @@ defmodule Egapp.Parser.XML.FSM do
     {:next_state, :xml_stream_element, state}
   end
 
-  def xml_stream_element({:xmlstreamend, tag_name}, state) do
-    IO.inspect({:xml_stream_end, tag_name, state})
-    GenServer.call(:event_man, :read)
-    {:next_state, :begin, state}
+  def xml_stream_element({:xmlstreamend, _tag_name}, state) do
+    GenServer.call(state.event_man, {"end"})
+    {:stop, :normal, state}
   end
 
   def xml_stream_cdata({:xmlstreamelement, tag_name, attrs}, state) do

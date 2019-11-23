@@ -166,7 +166,7 @@ defmodule Egapp.Parser.XML.EventMan do
     action =
       case result do
         {:success, _, _} -> :reset
-        {:failure, _, _} -> :reset
+        {:failure, _, _} -> :continue
         {:challenge, _, _} -> :continue
       end
     {:reply, action, state}
@@ -232,6 +232,12 @@ defmodule Egapp.Parser.XML.EventMan do
 
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
+  end
+
+  def handle_call({"end"}, _from, state) do
+    resp = ['</stream:stream>']
+    apply(state.mod, :send, [state.to, resp])
+    {:stop, :normal, state}
   end
 
   defp prepend_xml_decl(content) do
