@@ -7,5 +7,6 @@ defmodule Egapp.Repo.User do
     field :username, :string
     field :password, :string
     has_one :roster, Egapp.Repo.Roster
+    many_to_many :rosters, Egapp.Repo.Roster, join_through: "users_rosters"
   end
 end
