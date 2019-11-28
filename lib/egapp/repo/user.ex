@@ -6,5 +6,6 @@ defmodule Egapp.Repo.User do
     field :last_name, :string
     field :username, :string
     field :password, :string
+    has_one :roster, Egapp.Repo.Roster
   end
 end
