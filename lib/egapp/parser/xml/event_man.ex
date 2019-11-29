@@ -11,7 +11,9 @@ defmodule Egapp.Parser.XML.EventMan do
     state = %{
       mod: Keyword.fetch!(args, :mod),
       to: Keyword.fetch!(args, :to),
-      client_props: %{}
+      client: %{
+        is_authenticated: false
+      }
     }
 
     {:ok, state}
@@ -25,11 +27,11 @@ defmodule Egapp.Parser.XML.EventMan do
         state
       ) do
     lang = Map.get(attrs, "xml:lang", "en")
-    state = put_in(state, [:client_props, :lang], lang)
+    state = put_in(state, [:client, :lang], lang)
     id = Enum.random(10_000_000..99_999_999)
 
     features =
-      if Map.get(state.client_props, :is_authenticated) do
+      if Map.get(state.client, :is_authenticated) do
         [Element.bind(), Element.session()]
       else
         [Element.mechanisms()]
@@ -157,18 +159,26 @@ defmodule Egapp.Parser.XML.EventMan do
 
   def handle_call({"auth", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"auth", attrs, data})}")
-    result = Egapp.SASL.authenticate!(attrs["mechanism"], data)
-    state = put_in(state, [:client_props, :is_authenticated], true)
+    result =
+      case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
+        {:success, user} ->
+          state =
+            state
+            |> put_in([:client, :is_authenticated], true)
+            |> put_in([:client, :id], user.id)
+          {:reset, Egapp.XMPP.Element.success(), state}
+        {:failure, nil} ->
+          {:continue, Egapp.XMPP.Element.failure({:"not-authorized", []}), state}
+        {:challenge, } ->
+          {:continue, nil, state}
+      end
+
+    {action, element, state} = result
+
     resp =
-      result
+      element
       |> :xmerl.export_simple_element(:xmerl_xml)
     apply(state.mod, :send, [state.to, resp])
-    action =
-      case result do
-        {:success, _, _} -> :reset
-        {:failure, _, _} -> :continue
-        {:challenge, _, _} -> :continue
-      end
     {:reply, action, state}
   end
 
@@ -197,7 +207,7 @@ defmodule Egapp.Parser.XML.EventMan do
       end
 
     resp =
-      Egapp.XMPP.Stanza.iq({attrs, child_node})
+      Egapp.XMPP.Stanza.iq({attrs, child_node}, state)
       |> :xmerl.export_simple_element(:xmerl_xml)
 
     apply(state.mod, :send, [state.to, resp])

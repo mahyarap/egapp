@@ -12,7 +12,7 @@ defmodule Egapp.XMPP.Stream do
   """
   def stream(id, opts) do
     attrs = [
-      from: 'localhost',
+      from: 'egapp.im',
       id: id,
       version: '1.0',
       "xml:lang": Keyword.get(opts, :lang) || 'en',

@@ -14,15 +14,16 @@ defmodule Egapp.SASL.Plain do
     username = Enum.at(result, 0)
     password = Enum.at(result, 1)
     user =
-      Ecto.Query.from(u in Egapp.Repo.User, where: u.username == ^username)
-      |> Egapp.Repo.one
+      Ecto.Query.from(
+        u in Egapp.Repo.User,
+        where: u.username == ^username
+      )
+      |> Egapp.Repo.one()
 
     if username == user.username and password == user.password do
-      Egapp.XMPP.Element.success()
+      {:success, user}
     else
-      Egapp.XMPP.Element.failure({
-        :"not-authorized", []
-      })
+      {:failure, nil}
     end
   end
 end

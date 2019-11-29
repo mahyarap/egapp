@@ -1,29 +1,18 @@
 defmodule Egapp.XMPP.Stanza do
+  require Ecto.Query
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Element
 
-  def iq(id, type, content \\ nil, attrs \\ []) do
-    {
-      :iq,
-      [id: id, type: type, from: Keyword.get(attrs, :from) || 'localhost'],
-      if content do
-        [content]
-      else
-        []
-      end
-    }
-  end
-
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_items}, _data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_items}, _data}]}, state
       ) do
     iq(attrs["id"], 'result', Element.query(xmlns: Const.xmlns_disco_items))
   end
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_info}, _data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_info}, _data}]}, state
       ) do
     iq(
       attrs["id"],
@@ -44,22 +33,31 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def iq(
-        {%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_roster}, _data}]}
+        {%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_roster}, _data}]}, state
       ) do
+    roster =
+      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
+      |> Egapp.Repo.one()
+      |> Egapp.Repo.preload(:users)
+
+    items = Enum.map(roster.users, fn user ->
+      {:item, [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'], []}
+    end)
+
     iq(
       attrs["id"],
       'result',
       Element.query(
         [xmlns: Const.xmlns_roster],
-        [{:item, [jid: 'alice@localhost', subscription: 'both'], []}]
+        items
       ),
-      from: 'foo@localhost'
+      from: 'foo@egapp.im'
     )
   end
 
   def iq(
         {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_bytestreams}, _data}]}
+         [{:xmlel, "query", %{"xmlns" => Const.xmlns_bytestreams}, _data}]}, state
       ) do
     iq(
       attrs["id"],
@@ -84,7 +82,7 @@ defmodule Egapp.XMPP.Stanza do
     )
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_version}, _data}]}) do
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_version}, _data}]}, state) do
     iq(
       attrs["id"],
       'result',
@@ -99,7 +97,7 @@ defmodule Egapp.XMPP.Stanza do
     )
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_last}, _data}]}) do
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "query", %{"xmlns" => Const.xmlns_last}, _data}]}, state) do
     iq(
       attrs["id"],
       'result',
@@ -111,7 +109,7 @@ defmodule Egapp.XMPP.Stanza do
     )
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "time", %{"xmlns" => Const.xmlns_time}, _data}]}) do
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "time", %{"xmlns" => Const.xmlns_time}, _data}]}, state) do
     {:ok, now} = DateTime.now("Etc/UTC")
     iso_time = DateTime.to_iso8601(now)
     iq(
@@ -129,7 +127,7 @@ defmodule Egapp.XMPP.Stanza do
     )
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}) do
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}, state) do
     iq(attrs["id"], 'result',
       {
         :vCard,
@@ -140,22 +138,34 @@ defmodule Egapp.XMPP.Stanza do
     )
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}) do
+  def iq({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}, state) do
     iq(attrs["id"], 'result')
   end
 
-  def iq({%{"type" => "set"} = attrs, [{:xmlel, "query", _child_attrs, _data}]}) do
+  def iq({%{"type" => "set"} = attrs, [{:xmlel, "query", _child_attrs, _data}]}, state) do
     """
     <iq type='result' id='#{attrs["id"]}'/>
     """
   end
 
-  def iq({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}) do
-    iq(attrs["id"], 'result', Element.bind('foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
+  def iq({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}, state) do
+    iq(attrs["id"], 'result', Element.bind('foo@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
   end
 
-  def iq({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}) do
+  def iq({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}, state) do
     iq(attrs["id"], 'result')
+  end
+
+  def iq(id, type, content \\ nil, attrs \\ []) do
+    {
+      :iq,
+      [id: id, type: type, from: Keyword.get(attrs, :from) || 'egapp.im'],
+      if content do
+        [content]
+      else
+        []
+      end
+    }
   end
 
   def message({attrs, [{:xmlel, "composing", _child_attrs, _data}]}) do
@@ -172,9 +182,9 @@ defmodule Egapp.XMPP.Stanza do
     {
       :message,
       [
-        from: 'alice@localhost/orchard',
+        from: 'alice@egapp.im/orchard',
         id: '#{attrs["id"]}',
-        to: 'foo@localhost/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
+        to: 'foo@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
         type: 'chat',
         "xml:lang": 'en'
       ],
@@ -187,8 +197,8 @@ defmodule Egapp.XMPP.Stanza do
       :presence,
       [
         # id: attrs["id"],
-        from: 'alice@localhost/android',
-        to: 'foo@localhost'
+        from: 'alice@egapp.im/android',
+        to: 'foo@egapp.im'
       ],
       []
     }
