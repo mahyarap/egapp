@@ -51,7 +51,7 @@ defmodule Egapp.XMPP.Stanza do
         [xmlns: Const.xmlns_roster],
         items
       ),
-      from: 'foo@egapp.im'
+      from: String.to_charlist(state.client.bare_jid)
     )
   end
 
@@ -149,7 +149,8 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def iq({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}, state) do
-    iq(attrs["id"], 'result', Element.bind('foo@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb'))
+    full_jid = '#{state.client.bare_jid}/#{state.client.resource}'
+    iq(attrs["id"], 'result', Element.bind(full_jid))
   end
 
   def iq({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}, state) do
@@ -182,9 +183,23 @@ defmodule Egapp.XMPP.Stanza do
     {
       :message,
       [
-        from: 'alice@egapp.im/orchard',
+        from: String.to_charlist(attrs["from"]),
+        id: String.to_charlist(attrs["id"]),
+        to: String.to_charlist(attrs["to"]),
+        type: 'chat',
+        "xml:lang": 'en'
+      ],
+      [{:body, [String.to_charlist(msg)]}]
+    }
+  end
+
+  def message({attrs, [{:xmlel, "body", [], [xmlcdata: msg]}]}) do
+    {
+      :message,
+      [
+        from: 'foo@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
         id: '#{attrs["id"]}',
-        to: 'foo@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
+        to: 'gooz@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
         type: 'chat',
         "xml:lang": 'en'
       ],

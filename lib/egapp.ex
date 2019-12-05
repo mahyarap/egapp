@@ -4,8 +4,9 @@ defmodule Egapp do
   def start(_type, _args) do
     children = [
       # Pass the parser to the server
-      {Egapp.Server, [parser: Egapp.Parser.XML]},
+      {Egapp.Server, parser: Egapp.Parser.XML},
       {Task.Supervisor, name: Egapp.ConnectionSupervisor},
+      {Egapp.JidConnRegistry, []},
       {Egapp.Repo, []}
     ]
 

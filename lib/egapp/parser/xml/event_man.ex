@@ -3,8 +3,11 @@ defmodule Egapp.Parser.XML.EventMan do
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Element
+  alias Egapp.JidConnRegistry
 
   @behaviour GenServer
+
+  @bare_jid_re ~r|^(?<localpart>[^@]+)@(?<domainpart>[^/]+)|
 
   @impl true
   def init(args) do
@@ -166,6 +169,9 @@ defmodule Egapp.Parser.XML.EventMan do
             state
             |> put_in([:client, :is_authenticated], true)
             |> put_in([:client, :id], user.id)
+            |> put_in([:client, :bare_jid], user.username <> "@egapp.im")
+            |> put_in([:client, :resource], Enum.random(10_000_000..99_999_999))
+          JidConnRegistry.put(user.username <> "@egapp.im", state.to)
           {:reset, Egapp.XMPP.Element.success(), state}
         {:failure, nil} ->
           {:continue, Egapp.XMPP.Element.failure({:"not-authorized", []}), state}
@@ -224,10 +230,13 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   def handle_call({"message", attrs, data}, _from, state) do
+    bare_jid = Regex.named_captures(@bare_jid_re, attrs["to"])
+    to = JidConnRegistry.get(bare_jid["localpart"] <> "@" <> bare_jid["domainpart"])
+    attrs = Map.put(attrs, "from", "#{state.client.bare_jid}/#{state.client.resource}")
     resp = Egapp.XMPP.Stanza.message({attrs, data})
     resp = if resp, do: :xmerl.export_simple_element(resp, :xmerl_xml), else: []
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod, :send, [to, resp])
     {:reply, :continue, state}
   end
 
