@@ -23,6 +23,14 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   @impl true
+  @doc """
+  Handles the initial stream header.
+
+  RFC6120 4.1
+  RFC6120 4.2
+  RFC6120 4.7
+  RFC6120 4.8
+  """
   def handle_call(
         {"stream:stream",
           %{"xmlns:stream" => Const.xmlns_stream, "version" => Const.xmpp_version} = attrs},
@@ -31,7 +39,6 @@ defmodule Egapp.Parser.XML.EventMan do
       ) do
     lang = Map.get(attrs, "xml:lang", "en")
     state = put_in(state, [:client, :lang], lang)
-    id = Enum.random(10_000_000..99_999_999)
 
     features =
       if Map.get(state.client, :is_authenticated) do
@@ -41,9 +48,9 @@ defmodule Egapp.Parser.XML.EventMan do
       end
 
     content = Element.features(features)
-
+    id = Enum.random(10_000_000..99_999_999)
     resp =
-      Stream.stream(id, from: Map.get(attrs, "from"), content: content)
+      Stream.stream(content, id: id, from: Map.get(attrs, "from"), lang: lang)
       |> :xmerl.export_simple_element(:xmerl_xml)
       # Remove </stream:stream> which is automatically created
       |> Enum.reverse()
@@ -54,6 +61,11 @@ defmodule Egapp.Parser.XML.EventMan do
     {:reply, :continue, state}
   end
 
+  @doc """
+  Returns "invalid-namespace" if the stream header is invalid
+
+  RFC6120 4.8.1
+  """
   def handle_call(
         {"stream:stream", %{"xmlns:stream" => _, "version" => Const.xmpp_version} = attrs},
         _from,
@@ -71,6 +83,11 @@ defmodule Egapp.Parser.XML.EventMan do
     {:stop, :normal, :stop, state}
   end
 
+  @doc """
+  Returns "unsupported-version" if the version is invalid
+
+  RFC6120 4.7.5
+  """
   def handle_call(
         {"stream:stream", %{"xmlns:stream" => _, "version" => _} = attrs},
         _from,
@@ -88,73 +105,39 @@ defmodule Egapp.Parser.XML.EventMan do
     {:reply, :stop, state}
   end
 
-  def handle_call({"stream:stream", attrs}, _from, state) do
-    resp =
-      cond do
-        Map.get(attrs, "xmlns:stream") != Const.xmlns_stream ->
-          """
-          <stream:error>
-          <invalid-namespace
-          xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-          </stream:error>
-          """
+  @doc """
+  Returns other stream error cases
 
-        not Map.has_key?(attrs, "xmlns") ->
-          """
-          <stream:error>
-          <invalid-namespace
-          xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-          </stream:error>
-          """
+  RFC6120 4.7.5
+  RFC6120 4.8.1
+  """
+  def handle_call({"stream:stream", attrs}, _from, state) do
+    id = Enum.random(10_000_000..99_999_999)
+    content =
+      cond do
+        not Map.has_key?(attrs, "xmlns:stream") ->
+          Egapp.XMPP.Stream.bad_namespace_prefix_error()
 
         not Map.has_key?(attrs, "version") ->
-          """
-          <stream:error>
-          <unsupported-version
-          xmlns='urn:ietf:params:xml:ns:xmpp-streams'/>
-          </stream:error>
-          """
+          Egapp.XMPP.Stream.unsupported_version_error()
 
         true ->
           "should not get here"
       end
+
+    resp =
+      Stream.stream(content, id: id)
+      |> :xmerl.export_simple_element(:xmerl_xml)
 
     apply(state.mod, :send, [state.to, resp])
     {:noreply, state}
   end
 
   def handle_call({"stream", _attrs}, _from, state) do
-    resp = """
-    <stream:error>
-    <bad-namespace-prefix
-    xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-    </stream:error>
-    """
-
-    apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
-  end
-
-  def handle_call({"error:parsing", error}, _from, state) do
+    id = Enum.random(10_000_000..99_999_999)
     resp =
-      case error do
-        {4, "not well-formed (invalid token)"} ->
-          "4"
-
-        {7, "mismatched tag"} ->
-          "7"
-
-        {27, "unbound prefix"} ->
-          """
-          <stream:error>
-          <invalid-xml
-          xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-          </stream:error>
-          """
-
-        _ ->
-          "3"
-      end
+      Stream.stream(Egapp.XMPP.Stream.bad_namespace_prefix_error(), id: id)
+      |> :xmerl.export_simple_element(:xmerl_xml)
 
     apply(state.mod, :send, [state.to, resp])
     {:stop, :normal, state}
@@ -238,6 +221,25 @@ defmodule Egapp.Parser.XML.EventMan do
 
     apply(state.mod, :send, [to, resp])
     {:reply, :continue, state}
+  end
+
+  def handle_call({:error, error}, _from, state) do
+    id = Enum.random(10_000_000..99_999_999)
+    content =
+      case error do
+        {4, "not well-formed (invalid token)"} -> "4"
+        {7, "mismatched tag"} -> "7"
+        {27, "unbound prefix"} -> Egapp.XMPP.Stream.bad_format_error()
+        {8, "duplicate attribute"} -> Egapp.XMPP.Stream.bad_format_error()
+        _ -> IO.inspect error
+      end
+
+    resp =
+      Stream.stream(content, id: id)
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    apply(state.mod, :send, [state.to, resp])
+    {:stop, :normal, state}
   end
 
   def handle_call({_tag_name, _attrs}, _from, state) do

@@ -1,4 +1,6 @@
 defmodule Egapp.XMPP.Stream do
+  require Egapp.Constants, as: Const
+
   @doc """
   RFC6120 4.7
   RFC6120 4.7.1
@@ -10,10 +12,10 @@ defmodule Egapp.XMPP.Stream do
   RFC6120 4.8.2
   RFC6120 4.8.3
   """
-  def stream(id, opts) do
+  def stream(content, opts) do
     attrs = [
       from: 'egapp.im',
-      id: id,
+      id: Keyword.fetch!(opts, :id),
       version: '1.0',
       "xml:lang": Keyword.get(opts, :lang) || 'en',
       xmlns: 'jabber:client',
@@ -22,8 +24,6 @@ defmodule Egapp.XMPP.Stream do
 
     {from, opts} = Keyword.pop(opts, :from)
     attrs = if from, do: [{:to, from} | attrs], else: attrs
-
-    {content, opts} = Keyword.pop(opts, :content)
     content = if content, do: [content], else: []
 
     {
@@ -44,7 +44,7 @@ defmodule Egapp.XMPP.Stream do
   def invalid_namespace_error do
     error({
       :"invalid-namespace",
-      [xmlns: 'urn:ietf:params:xml:ns:xmpp-streams'],
+      [xmlns: Const.xmlns_stream_error],
       []
     })
   end
@@ -52,7 +52,23 @@ defmodule Egapp.XMPP.Stream do
   def unsupported_version_error do
     error({
       :"unsupported-version",
-      [xmlns: 'urn:ietf:params:xml:ns:xmpp-streams'],
+      [xmlns: Const.xmlns_stream_error],
+      []
+    })
+  end
+
+  def bad_format_error do
+    error({
+      :"bad-format",
+      [xmlns: Const.xmlns_stream_error],
+      []
+    })
+  end
+
+  def bad_namespace_prefix_error do
+    error({
+      :"bad-namespace-prefix",
+      [xmlns: Const.xmlns_stream_error],
       []
     })
   end

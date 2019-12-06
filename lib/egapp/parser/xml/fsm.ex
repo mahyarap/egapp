@@ -48,7 +48,7 @@ defmodule Egapp.Parser.XML.FSM do
 
   def begin({:xmlstreamerror, error}, state) do
     IO.inspect({:xml_stream_error, error, state})
-    GenServer.call(state.event_man, {"error:parsing", error})
+    GenServer.call(state.event_man, {:error, error})
     {:stop, :normal, state}
   end
 
