@@ -14,7 +14,7 @@ defmodule Egapp.Server do
   end
 
   def serve(args) do
-    socket = listen(5222)
+    socket = listen(Application.get_env(:egapp, :listen))
     loop(socket, args)
   end
 

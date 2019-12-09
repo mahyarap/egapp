@@ -8,3 +8,6 @@ config :egapp, Egapp.Repo,
   username: "egapp",
   password: "pass",
   hostname: "localhost"
+
+config :egapp,
+  listen: 5222
