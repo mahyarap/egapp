@@ -44,7 +44,7 @@ defmodule Egapp.XMPP.Stream do
   def invalid_namespace_error do
     error({
       :"invalid-namespace",
-      [xmlns: Const.xmlns_stream_error],
+      [xmlns: Const.xmlns_stream_error()],
       []
     })
   end
@@ -52,7 +52,7 @@ defmodule Egapp.XMPP.Stream do
   def unsupported_version_error do
     error({
       :"unsupported-version",
-      [xmlns: Const.xmlns_stream_error],
+      [xmlns: Const.xmlns_stream_error()],
       []
     })
   end
@@ -60,7 +60,7 @@ defmodule Egapp.XMPP.Stream do
   def bad_format_error do
     error({
       :"bad-format",
-      [xmlns: Const.xmlns_stream_error],
+      [xmlns: Const.xmlns_stream_error()],
       []
     })
   end
@@ -68,7 +68,7 @@ defmodule Egapp.XMPP.Stream do
   def bad_namespace_prefix_error do
     error({
       :"bad-namespace-prefix",
-      [xmlns: Const.xmlns_stream_error],
+      [xmlns: Const.xmlns_stream_error()],
       []
     })
   end

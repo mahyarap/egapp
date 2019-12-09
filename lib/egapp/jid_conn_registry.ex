@@ -7,7 +7,7 @@ defmodule Egapp.JidConnRegistry do
 
   @impl true
   def init(_) do
-    :ets.new( __MODULE__, [:set, :named_table, :public])
+    :ets.new(__MODULE__, [:set, :named_table, :public])
     {:ok, %{}}
   end
 

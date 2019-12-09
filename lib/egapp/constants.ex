@@ -21,7 +21,7 @@ defmodule Constants do
       end
   """
   
- defmacro __using__(_opts) do
+  defmacro __using__(_opts) do
     quote do
       import Constants
     end

@@ -8,8 +8,12 @@ defmodule Egapp.SASL.Digest do
 
     a1 = [
       md5([decoded["username"], ':', decoded["realm"], ':', 'bar']),
-      ':', decoded["nonce"], ':', decoded["cnonce"]
+      ':',
+      decoded["nonce"],
+      ':',
+      decoded["cnonce"]
     ]
+
     a2 = ['AUTHENTICATE', ':', decoded["digest-uri"]]
 
     p1 = md5_hex(a1)

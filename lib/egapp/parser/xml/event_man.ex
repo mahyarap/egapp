@@ -33,7 +33,7 @@ defmodule Egapp.Parser.XML.EventMan do
   """
   def handle_call(
         {"stream:stream",
-          %{"xmlns:stream" => Const.xmlns_stream, "version" => Const.xmpp_version} = attrs},
+         %{"xmlns:stream" => Const.xmlns_stream(), "version" => Const.xmpp_version()} = attrs},
         _from,
         state
       ) do
@@ -49,6 +49,7 @@ defmodule Egapp.Parser.XML.EventMan do
 
     content = Element.features(features)
     id = Enum.random(10_000_000..99_999_999)
+
     resp =
       Stream.stream(content, id: id, from: Map.get(attrs, "from"), lang: lang)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -67,7 +68,7 @@ defmodule Egapp.Parser.XML.EventMan do
   RFC6120 4.8.1
   """
   def handle_call(
-        {"stream:stream", %{"xmlns:stream" => _, "version" => Const.xmpp_version} = attrs},
+        {"stream:stream", %{"xmlns:stream" => _, "version" => Const.xmpp_version()} = attrs},
         _from,
         state
       ) do
@@ -113,6 +114,7 @@ defmodule Egapp.Parser.XML.EventMan do
   """
   def handle_call({"stream:stream", attrs}, _from, state) do
     id = Enum.random(10_000_000..99_999_999)
+
     content =
       cond do
         not Map.has_key?(attrs, "xmlns:stream") ->
@@ -135,6 +137,7 @@ defmodule Egapp.Parser.XML.EventMan do
 
   def handle_call({"stream", _attrs}, _from, state) do
     id = Enum.random(10_000_000..99_999_999)
+
     resp =
       Stream.stream(Egapp.XMPP.Stream.bad_namespace_prefix_error(), id: id)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -145,6 +148,7 @@ defmodule Egapp.Parser.XML.EventMan do
 
   def handle_call({"auth", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"auth", attrs, data})}")
+
     result =
       case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
         {:success, user} ->
@@ -154,11 +158,14 @@ defmodule Egapp.Parser.XML.EventMan do
             |> put_in([:client, :id], user.id)
             |> put_in([:client, :bare_jid], user.username <> "@egapp.im")
             |> put_in([:client, :resource], Enum.random(10_000_000..99_999_999))
+
           JidConnRegistry.put(user.username <> "@egapp.im", state.to)
           {:reset, Egapp.XMPP.Element.success(), state}
+
         {:failure, nil} ->
           {:continue, Egapp.XMPP.Element.failure({:"not-authorized", []}), state}
-        {:challenge, } ->
+
+        {:challenge} ->
           {:continue, nil, state}
       end
 
@@ -167,6 +174,7 @@ defmodule Egapp.Parser.XML.EventMan do
     resp =
       element
       |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:reply, action, state}
   end
@@ -176,12 +184,14 @@ defmodule Egapp.Parser.XML.EventMan do
 
     result = {
       :success,
-      [xmlns: Const.xmlns_sasl],
-      ["rspauth=" <> rspauth |> Base.encode64() |> String.to_charlist()]
+      [xmlns: Const.xmlns_sasl()],
+      [("rspauth=" <> rspauth) |> Base.encode64() |> String.to_charlist()]
     }
+
     resp =
       result
       |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:reply, :reset, state}
   end
@@ -205,9 +215,11 @@ defmodule Egapp.Parser.XML.EventMan do
 
   def handle_call({"presence", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"iq", attrs, data})}")
+
     resp =
       Egapp.XMPP.Stanza.presence({attrs, data})
       |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:reply, :continue, state}
   end
@@ -225,13 +237,14 @@ defmodule Egapp.Parser.XML.EventMan do
 
   def handle_call({:error, error}, _from, state) do
     id = Enum.random(10_000_000..99_999_999)
+
     content =
       case error do
         {4, "not well-formed (invalid token)"} -> "4"
         {7, "mismatched tag"} -> "7"
         {27, "unbound prefix"} -> Egapp.XMPP.Stream.bad_format_error()
         {8, "duplicate attribute"} -> Egapp.XMPP.Stream.bad_format_error()
-        _ -> IO.inspect error
+        _ -> IO.inspect(error)
       end
 
     resp =

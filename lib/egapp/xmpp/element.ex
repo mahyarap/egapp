@@ -25,7 +25,7 @@ defmodule Egapp.XMPP.Element do
 
     {
       :bind,
-      [xmlns: Const.xmlns_bind],
+      [xmlns: Const.xmlns_bind()],
       content
     }
   end
@@ -37,7 +37,7 @@ defmodule Egapp.XMPP.Element do
   def mechanisms do
     {
       :mechanisms,
-      [xmlns: Const.xmlns_sasl],
+      [xmlns: Const.xmlns_sasl()],
       [
         # Server preference order
         # {:mechanism, ['ANONYMOUS']},
@@ -50,15 +50,17 @@ defmodule Egapp.XMPP.Element do
   def challenge do
     {
       :challenge,
-      [xmlns: Const.xmlns_sasl],
-      ['cmVhbG09ImZvbyIsbm9uY2U9IjEyMyIsY2hhcnNldD11dGYtOCxhbGdvcml0aG09bWQ1LXNlc3MsY2lwaGVyPSJkZXMiCg==']
+      [xmlns: Const.xmlns_sasl()],
+      [
+        'cmVhbG09ImZvbyIsbm9uY2U9IjEyMyIsY2hhcnNldD11dGYtOCxhbGdvcml0aG09bWQ1LXNlc3MsY2lwaGVyPSJkZXMiCg=='
+      ]
     }
   end
 
   def success do
     {
       :success,
-      [xmlns: Const.xmlns_sasl],
+      [xmlns: Const.xmlns_sasl()],
       []
     }
   end
@@ -66,7 +68,7 @@ defmodule Egapp.XMPP.Element do
   def failure(reason) do
     {
       :failure,
-      [xmlns: Const.xmlns_sasl],
+      [xmlns: Const.xmlns_sasl()],
       [reason]
     }
   end
@@ -77,7 +79,7 @@ defmodule Egapp.XMPP.Element do
   def session do
     {
       :session,
-      [xmlns: Const.xmlns_session],
+      [xmlns: Const.xmlns_session()],
       []
     }
   end
