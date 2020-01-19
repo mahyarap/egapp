@@ -32,118 +32,15 @@ defmodule Egapp.Parser.XML.EventMan do
   RFC6120 4.7
   RFC6120 4.8
   """
-  def handle_call(
-        {"stream:stream",
-         %{"xmlns:stream" => Const.xmlns_stream(), "version" => Const.xmpp_version()} = attrs},
-        _from,
-        state
-      ) do
-    lang = Map.get(attrs, "xml:lang", "en")
-    state = put_in(state, [:client, :lang], lang)
-
-    features =
-      if Map.get(state.client, :is_authenticated) do
-        [Element.bind(), Element.session()]
-      else
-        [Element.mechanisms()]
-      end
-
-    content = Element.features(features)
-    id = Enum.random(10_000_000..99_999_999)
-
-    resp =
-      Stream.stream(content, id: id, from: Map.get(attrs, "from"), lang: lang)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-      # Remove </stream:stream> which is automatically created
-      |> Enum.reverse()
-      |> tl()
-      |> Enum.reverse()
-
-    apply(state.mod, :send, [state.to, prepend_xml_decl(resp)])
-    {:reply, :continue, state}
-  end
-
-  @doc """
-  Returns "invalid-namespace" if the stream header is invalid
-
-  RFC6120 4.8.1
-  """
-  def handle_call(
-        {"stream:stream", %{"xmlns:stream" => _, "version" => Const.xmpp_version()} = attrs},
-        _from,
-        state
-      ) do
-    lang = Map.get(attrs, "xml:lang", "en")
-    id = Enum.random(10_000_000..99_999_999)
-    content = Stream.invalid_namespace_error()
-
-    resp =
-      Stream.stream(id, from: Map.get(attrs, "from"), lang: lang, content: content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    apply(state.mod, :send, [state.to, prepend_xml_decl(resp)])
-    {:stop, :normal, :stop, state}
-  end
-
-  @doc """
-  Returns "unsupported-version" if the version is invalid
-
-  RFC6120 4.7.5
-  """
-  def handle_call(
-        {"stream:stream", %{"xmlns:stream" => _, "version" => _} = attrs},
-        _from,
-        state
-      ) do
-    lang = Map.get(attrs, "xml:lang", "en")
-    id = Enum.random(10_000_000..99_999_999)
-    content = Stream.unsupported_version_error()
-
-    resp =
-      Stream.stream(id, from: Map.get(attrs, "from"), lang: lang, content: content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    apply(state.mod, :send, [state.to, resp])
-    {:reply, :stop, state}
-  end
-
-  @doc """
-  Returns other stream error cases
-
-  RFC6120 4.7.5
-  RFC6120 4.8.1
-  """
   def handle_call({"stream:stream", attrs}, _from, state) do
-    id = Enum.random(10_000_000..99_999_999)
-
-    content =
-      cond do
-        not Map.has_key?(attrs, "xmlns:stream") ->
-          Egapp.XMPP.Stream.bad_namespace_prefix_error()
-
-        not Map.has_key?(attrs, "version") ->
-          Egapp.XMPP.Stream.unsupported_version_error()
-
-        true ->
-          "should not get here"
-      end
-
-    resp =
-      Stream.stream(content, id: id)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
+    case Stream.stream(attrs, state) do
+      {:ok, _} -> {:reply, :continue, state}
+      {:error, _reason} -> {:stop, :normal, state}
+    end
   end
 
-  def handle_call({"stream", _attrs}, _from, state) do
-    id = Enum.random(10_000_000..99_999_999)
-
-    resp =
-      Stream.stream(Egapp.XMPP.Stream.bad_namespace_prefix_error(), id: id)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    apply(state.mod, :send, [state.to, resp])
+  def handle_call({"stream", attrs}, _from, state) do
+    Stream.error(:bad_namespace_prefix, attrs, state)
     {:stop, :normal, state}
   end
 
