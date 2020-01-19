@@ -228,13 +228,12 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def presence({attrs, foo}) do
+  def presence(from, to) do
     {
       :presence,
       [
-        # id: attrs["id"],
-        from: 'alice@egapp.im/android',
-        to: 'foo@egapp.im'
+        from: from,
+        to: to
       ],
       []
     }
