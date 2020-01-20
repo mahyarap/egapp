@@ -103,12 +103,10 @@ defmodule Egapp.Parser.XML.EventMan do
           [{:xmlel, tag_name, to_map(child_attrs), child_data}]
       end
 
-    resp =
-      Egapp.XMPP.Stanza.iq({attrs, child_node}, state)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    apply(state.mod, :send, [state.to, resp])
-    {:reply, :continue, state}
+    case Egapp.XMPP.Stanza.iq({attrs, child_node}, state) do
+      {:ok, _} -> {:reply, :continue, state}
+      {:error, _reason} -> {:stop, :normal, state}
+    end
   end
 
   @doc """
