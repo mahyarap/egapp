@@ -49,7 +49,7 @@ defmodule Egapp.Parser.XML.EventMan do
 
     result =
       case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
-        {:success, user} ->
+        {:ok, user} ->
           state =
             state
             |> put_in([:client, :is_authenticated], true)
@@ -60,10 +60,10 @@ defmodule Egapp.Parser.XML.EventMan do
           JidConnRegistry.put(user.username <> "@egapp.im", state.to)
           {:reset, Egapp.XMPP.Element.success(), state}
 
-        {:failure, nil} ->
+        {:error, _} ->
           {:continue, Egapp.XMPP.Element.failure({:"not-authorized", []}), state}
 
-        {:challenge} ->
+        {:challenge, _} ->
           {:continue, nil, state}
       end
 

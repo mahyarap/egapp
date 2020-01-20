@@ -22,10 +22,13 @@ defmodule Egapp.SASL.Plain do
       )
       |> Egapp.Repo.one()
 
-    if user != nil and username == user.username and password == user.password do
-      {:success, user}
-    else
-      {:failure, nil}
+    cond do
+      user == nil ->
+        {:error, :user_not_found}
+      password != user.password ->
+        {:error, :password_mismatch}
+      true ->
+        {:ok, user}
     end
   end
 end
