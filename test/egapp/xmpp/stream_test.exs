@@ -28,8 +28,30 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
     assert resp =~ ~s(stream:features)
     assert resp =~ ~s(mechanisms)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_sasl <> ~s(")
-    assert resp =~ ~s(PLAIN)
+    assert not (resp =~ ~s(</stream:stream>))
+  end
+
+  test "stream header when authenticated", %{state: state} do
+    attrs = %{
+      "xmlns:stream" => Const.xmlns_stream(),
+      "version" => Const.xmpp_version()
+    }
+    state = put_in(state, [:client, :is_authenticated], true)
+    assert {:ok, resp} = Stream.stream(attrs, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<?xml version="1.0"?>)
+    assert resp =~ ~s(stream:stream)
+    assert resp =~ ~s(from="egapp.im")
+    assert resp =~ ~r/id="[0-9]{8}"/
+    assert resp =~ ~s(version="1.0")
+    assert resp =~ ~s(xml:lang="en")
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_c2s <> ~s(")
+    assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
+    assert resp =~ ~s(stream:features)
+    assert not (resp =~ ~s(mechanisms))
+    assert resp =~ ~s(bind)
+    assert resp =~ ~s(session)
     assert not (resp =~ ~s(</stream:stream>))
   end
 
@@ -47,7 +69,6 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(xmlns=") <> Const.xmlns_c2s <> ~s(")
     assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
     assert resp =~ ~s(stream:error)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_stream_error <> ~s(")
     assert resp =~ ~s(unsupported-version)
     assert resp =~ ~s(</stream:stream>)
   end
@@ -66,7 +87,6 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(xmlns=") <> Const.xmlns_c2s <> ~s(")
     assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
     assert resp =~ ~s(stream:error)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_stream_error <> ~s(")
     assert resp =~ ~s(invalid-namespace)
     assert resp =~ ~s(</stream:stream>)
   end
@@ -85,7 +105,6 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(xmlns=") <> Const.xmlns_c2s <> ~s(")
     assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
     assert resp =~ ~s(stream:error)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_stream_error <> ~s(")
     assert resp =~ ~s(unsupported-version)
     assert resp =~ ~s(</stream:stream>)
   end
@@ -104,7 +123,24 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(xmlns=") <> Const.xmlns_c2s <> ~s(")
     assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
     assert resp =~ ~s(stream:error)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_stream_error <> ~s(")
+    assert resp =~ ~s(bad-namespace-prefix)
+    assert resp =~ ~s(</stream:stream>)
+  end
+
+  test "manually creating errors", %{state: state} do
+    resp =
+      Stream.error(:bad_namespace_prefix, %{}, state)
+      |> IO.chardata_to_string()
+
+    assert resp =~ ~s(<?xml version="1.0"?>)
+    assert resp =~ ~s(stream:stream)
+    assert resp =~ ~s(from="egapp.im")
+    assert resp =~ ~r/id="[0-9]{8}"/
+    assert resp =~ ~s(version="1.0")
+    assert resp =~ ~s(xml:lang="en")
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_c2s <> ~s(")
+    assert resp =~ ~s(xmlns:stream=") <> Const.xmlns_stream <> ~s(")
+    assert resp =~ ~s(stream:error)
     assert resp =~ ~s(bad-namespace-prefix)
     assert resp =~ ~s(</stream:stream>)
   end

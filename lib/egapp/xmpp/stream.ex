@@ -98,6 +98,7 @@ defmodule Egapp.XMPP.Stream do
 
     stream_template(build_stream_attrs(attrs, state), content)
     |> :xmerl.export_simple_element(:xmerl_xml)
+    |> prepend_xml_decl
   end
 
   defp stream_template(%{id: id, lang: lang, from: from}, content) do
