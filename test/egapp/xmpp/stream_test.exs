@@ -11,10 +11,11 @@ defmodule Egapp.XMPP.StreamTest do
   end
 
   test "stream header has necessary attributes", %{state: state} do
-    assert {:ok, resp} = Stream.stream(
-      %{"xmlns:stream" => Const.xmlns_stream(), "version" => Const.xmpp_version()},
-      state
-    )
+    attrs = %{
+      "xmlns:stream" => Const.xmlns_stream(),
+      "version" => Const.xmpp_version()
+    }
+    assert {:ok, resp} = Stream.stream(attrs, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<?xml version="1.0"?>)
@@ -32,11 +33,9 @@ defmodule Egapp.XMPP.StreamTest do
     assert not (resp =~ ~s(</stream:stream>))
   end
 
-  test "stream header with incorrect version has necessary attributes", %{state: state} do
-    assert {:error, resp} = Stream.stream(
-      %{"xmlns:stream" => Const.xmlns_stream(), "version" => "0.9"},
-      state
-    )
+  test "stream header with incorrect version returns unsupported-version", %{state: state} do
+    attrs = %{"xmlns:stream" => Const.xmlns_stream(), "version" => "0.9"}
+    assert {:error, resp} = Stream.stream(attrs, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<?xml version="1.0"?>)
@@ -53,11 +52,9 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(</stream:stream>)
   end
 
-  test "stream header with incorrect namespace has necessary attributes", %{state: state} do
-    assert {:error, resp} = Stream.stream(
-      %{"xmlns:stream" => "foo", "version" => Const.xmpp_version()},
-      state
-    )
+  test "stream header with incorrect namespace returns invalid-namespace", %{state: state} do
+    attrs = %{"xmlns:stream" => "foo", "version" => Const.xmpp_version()}
+    assert {:error, resp} = Stream.stream(attrs , state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<?xml version="1.0"?>)
@@ -74,11 +71,9 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(</stream:stream>)
   end
 
-  test "stream header without version has necessary attributes", %{state: state} do
-    assert {:error, resp} = Stream.stream(
-      %{"xmlns:stream" => Const.xmlns_stream()},
-      state
-    )
+  test "stream header without version returns unsupported-version", %{state: state} do
+    attrs = %{"xmlns:stream" => Const.xmlns_stream()}
+    assert {:error, resp} = Stream.stream(attrs, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<?xml version="1.0"?>)
@@ -95,11 +90,9 @@ defmodule Egapp.XMPP.StreamTest do
     assert resp =~ ~s(</stream:stream>)
   end
 
-  test "stream header without namespace has necessary attributes", %{state: state} do
-    assert {:error, resp} = Stream.stream(
-      %{"version" => Const.xmpp_version()},
-      state
-    )
+  test "stream header without namespace returns bad-namespace-prefix", %{state: state} do
+    attrs = %{"version" => Const.xmpp_version()}
+    assert {:error, resp} = Stream.stream(attrs, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<?xml version="1.0"?>)
