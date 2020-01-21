@@ -1,76 +1,28 @@
 defmodule Egapp.XMPP.Stanza do
-  require Ecto.Query
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Element
 
-  def iq(
-        {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_items()}, _data}]},
-        state
-      ) do
-    content = Element.query(xmlns: Const.xmlns_disco_items())
+  def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
+    content = Element.query(child_attrs, child_data, state)
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    {:ok, apply(state.mod, :send, [state.to, resp])}
+    {:ok, resp}
   end
 
-  def iq(
-        {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_disco_info()}, _data}]},
-        state
-      ) do
-    content =
-      Element.query(
-        [xmlns: Const.xmlns_disco_info()],
-        [
-          {:identity, [category: 'server', type: 'im'], []},
-          {:feature, [var: Const.xmlns_disco_info()], []},
-          {:feature, [var: Const.xmlns_disco_items()], []},
-          {:feature, [var: Const.xmlns_ping()], []},
-          {:feature, [var: Const.xmlns_vcard()], []},
-          {:feature, [var: Const.xmlns_version()], []},
-          {:feature, [var: Const.xmlns_last()], []}
-        ]
-      )
-
+  def iq(%{"type" => "get"} = attrs, {"vCard", child_attrs, child_data}, state) do
+    content = Element.vcard(child_attrs, child_data, state)
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    {:ok, apply(state.mod, :send, [state.to, resp])}
+    {:ok, resp}
   end
 
   def iq(
-        {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_roster()}, _data}]},
-        state
-      ) do
-    roster =
-      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
-      |> Egapp.Repo.one()
-      |> Egapp.Repo.preload(:users)
-
-    items = Enum.map(roster.users, fn user ->
-      {
-        :item,
-        [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'],
-        []
-      }
-    end)
-
-    content = Element.query([xmlns: Const.xmlns_roster()], items)
-    resp =
-      iq_template(build_iq_attrs(attrs, 'result', state), content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    {:ok, apply(state.mod, :send, [state.to, resp])}
-  end
-
-  def iq(
-        {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_bytestreams()}, _data}]},
+        %{"type" => "get"} = attrs,
+         {"query", %{"xmlns" => Const.xmlns_bytestreams()}, _data},
         state
       ) do
       content = Element.query(
@@ -98,8 +50,8 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def iq(
-        {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_version()}, _data}]},
+        %{"type" => "get"} = attrs,
+         {"query", %{"xmlns" => Const.xmlns_version()}, _data},
         state
       ) do
     content = Element.query(
@@ -118,8 +70,8 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def iq(
-        {%{"type" => "get"} = attrs,
-         [{:xmlel, "query", %{"xmlns" => Const.xmlns_last()}, _data}]},
+        %{"type" => "get"} = attrs,
+         {"query", %{"xmlns" => Const.xmlns_last()}, _data},
         state
       ) do
     content = Element.query(
@@ -135,7 +87,7 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def iq(
-        {%{"type" => "get"} = attrs, [{:xmlel, "time", %{"xmlns" => Const.xmlns_time()}, _data}]},
+        %{"type" => "get"} = attrs, {"time", %{"xmlns" => Const.xmlns_time()}, _data},
         state
       ) do
     {:ok, now} = DateTime.now("Etc/UTC")
@@ -156,21 +108,16 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, apply(state.mod, :send, [state.to, resp])}
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "vCard", _child_attrs, _data}]}, state) do
-    content = {
-      :vCard,
-      [xmlns: 'vcard-temp'],
-      []
-    }
-
+  def iq(%{"type" => "get"} = attrs, {"ping", child_attrs, child_data}, state) do
+    content = Element.ping(child_attrs, child_data, state)
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    {:ok, apply(state.mod, :send, [state.to, resp])}
+    {:ok, resp}
   end
 
-  def iq({%{"type" => "get"} = attrs, [{:xmlel, "ping", _child_attrs, _data}]}, state) do
+  def iq(%{"type" => "set"} = attrs, {"query", _child_attrs, _data}, state) do
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), [])
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -178,30 +125,23 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, apply(state.mod, :send, [state.to, resp])}
   end
 
-  def iq({%{"type" => "set"} = attrs, [{:xmlel, "query", _child_attrs, _data}]}, state) do
+  def iq(%{"type" => "set"} = attrs, {"bind", child_attrs, child_data}, state) do
+    resp =
+      iq_template(
+        build_iq_attrs(attrs, 'result', state),
+        Element.bind(child_attrs, child_data, state)
+      )
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:ok, resp}
+  end
+
+  def iq(%{"type" => "set"} = attrs, {"session", _child_attrs, _child_data}, state) do
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), [])
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    {:ok, apply(state.mod, :send, [state.to, resp])}
-  end
-
-  def iq({%{"type" => "set"} = attrs, [{:xmlel, "bind", _child_attrs, _data}]}, state) do
-    full_jid = '#{state.client.bare_jid}/#{state.client.resource}'
-
-    resp =
-      iq_template(build_iq_attrs(attrs, 'result', state), Element.bind(full_jid))
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    {:ok, apply(state.mod, :send, [state.to, resp])}
-  end
-
-  def iq({%{"type" => "set"} = attrs, [{:xmlel, "session", _child_attrs, _data}]}, state) do
-    resp =
-      iq_template(build_iq_attrs(attrs, 'result', state), [])
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    {:ok, apply(state.mod, :send, [state.to, resp])}
+    {:ok, resp}
   end
 
   defp iq_template(%{id: id, type: type, from: from}, content) do

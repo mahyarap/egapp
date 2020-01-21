@@ -103,12 +103,14 @@ defmodule Egapp.Parser.XML.EventMan do
     child_node =
       case data do
         [{:xmlel, tag_name, child_attrs, child_data}] ->
-          [{:xmlel, tag_name, to_map(child_attrs), child_data}]
+          {tag_name, to_map(child_attrs), child_data}
       end
 
-    case Egapp.XMPP.Stanza.iq({attrs, child_node}, state) do
-      {:ok, _} -> {:reply, :continue, state}
-      {:error, _reason} -> {:stop, :normal, state}
+    {status, resp} = Egapp.XMPP.Stanza.iq(attrs, child_node, state)
+    apply(state.mod, :send, [state.to, resp])
+    case status do
+      :ok -> {:reply, :continue, state}
+      :error -> {:stop, :normal, state}
     end
   end
 

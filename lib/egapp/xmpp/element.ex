@@ -1,4 +1,5 @@
 defmodule Egapp.XMPP.Element do
+  require Ecto.Query
   require Egapp.Constants, as: Const
 
   @doc """
@@ -15,18 +16,21 @@ defmodule Egapp.XMPP.Element do
   RFC6120 7.4
   RFC6120 7.6.1
   """
-  def bind(jid \\ nil) do
-    content =
-      if jid do
-        [{:jid, [jid]}]
-      else
-        []
-      end
+  def bind(attrs, data, state) do
+    full_jid = '#{state.client.bare_jid}/#{state.client.resource}'
 
     {
       :bind,
       [xmlns: Const.xmlns_bind()],
-      content
+      [{:jid, [], [full_jid]}]
+    }
+  end
+
+  def bind() do
+    {
+      :bind,
+      [xmlns: Const.xmlns_bind()],
+      []
     }
   end
 
@@ -84,11 +88,57 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
-  def query(attrs, content \\ nil) do
+  def query(%{"xmlns" => Const.xmlns_disco_items}, _data, _state) do
+    query_template([xmlns: Const.xmlns_disco_items], [])
+  end
+
+  def query(%{"xmlns" => Const.xmlns_disco_info}, _data, _state) do
+    query_template(
+      [xmlns: Const.xmlns_disco_info()],
+      [
+        {:identity, [category: 'server', type: 'im'], []},
+        {:feature, [var: Const.xmlns_disco_info()], []},
+        {:feature, [var: Const.xmlns_disco_items()], []},
+        {:feature, [var: Const.xmlns_ping()], []},
+        {:feature, [var: Const.xmlns_vcard()], []},
+        {:feature, [var: Const.xmlns_version()], []},
+        {:feature, [var: Const.xmlns_last()], []}
+      ]
+    )
+  end
+
+  def query(%{"xmlns" => Const.xmlns_roster}, _data, state) do
+    roster =
+      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
+      |> Egapp.Repo.one()
+      |> Egapp.Repo.preload(:users)
+
+    items = Enum.map(roster.users, fn user ->
+      {
+        :item,
+        [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'],
+        []
+      }
+    end)
+
+    query_template([xmlns: Const.xmlns_roster], items)
+  end
+
+  defp query_template(attrs, content), do: {:query, attrs, content}
+
+  def vcard(%{"xmlns" => Const.xmlns_vcard}, _data, _state) do
     {
-      :query,
-      attrs,
-      content || []
+      :vCard,
+      [xmlns: Const.xmlns_vcard],
+      []
+    }
+  end
+
+  def ping(%{"xmlns" => Const.xmlns_ping}, _data, _state) do
+    {
+      :ping,
+      [xmlns: Const.xmlns_ping],
+      []
     }
   end
 end
