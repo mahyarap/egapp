@@ -1,6 +1,8 @@
 defmodule Egapp.XMPP.Stanza do
+  require Ecto.Query
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Element
+  alias Egapp.JidConnRegistry
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
     content = Element.query(child_attrs, child_data, state)
@@ -203,14 +205,40 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def presence(from, to) do
-    {
-      :presence,
-      [
-        from: from,
-        to: to
-      ],
-      []
+  def presence(attrs, child, state) do
+    roster =
+      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
+      |> Egapp.Repo.one()
+      |> Egapp.Repo.preload(:users)
+
+    resp =
+    roster.users
+    |> Enum.map(fn contact ->
+      {contact, JidConnRegistry.get(contact.username <> "@egapp.im")}
+    end)
+    |> Enum.filter(&elem(&1, 1))
+    |> Enum.map(fn {contact, conn} ->
+      attrs = %{
+        from: "#{state.client.bare_jid}/#{state.client.resource}",
+        to: contact.username <> "@egapp.im"
+      }
+      resp =
+        presence_template(attrs, [])
+        |> :xmerl.export_simple_element(:xmerl_xml)
+      {conn, resp}
+    end)
+  end
+
+  defp presence_template(%{from: from, to: to}, content) do
+    {:presence, [from: from, to: to], content}
+  end
+
+  defp build_presence_attrs(attrs, state) do
+    %{
+      lang: Map.get(state.client, "xml:lang", "en"),
+      id: Map.get(attrs, "id"),
+      from: Map.get(attrs, "from") || "egapp.im",
+      to: Map.get(attrs, "to")
     }
   end
 end

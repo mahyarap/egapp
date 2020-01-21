@@ -3,6 +3,7 @@ defmodule Egapp.Parser.XML.EventMan do
   require Ecto.Query
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Stream
+  alias Egapp.XMPP.Stanza
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
 
@@ -123,27 +124,7 @@ defmodule Egapp.Parser.XML.EventMan do
   def handle_call({"presence", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"presence", attrs, data})}")
 
-    roster =
-      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
-      |> Egapp.Repo.one()
-      |> Egapp.Repo.preload(:users)
-
-    contacts =
-      roster.users
-      |> Enum.map(fn contact ->
-        {contact, JidConnRegistry.get(contact.username <> "@egapp.im")}
-      end)
-      |> Enum.filter(&elem(&1, 1))
-      |> Enum.map(fn {contact, conn} ->
-        resp =
-          Egapp.XMPP.Stanza.presence(
-            "#{state.client.bare_jid}/#{state.client.resource}",
-            contact.username <> "@egapp.im"
-          )
-          |> :xmerl.export_simple_element(:xmerl_xml)
-        {conn, resp}
-      end)
-
+    contacts = Stanza.presence(attrs, data, state)
     for {conn, resp} <- contacts, do: apply(state.mod, :send, [conn, resp])
     {:reply, :continue, state}
   end
