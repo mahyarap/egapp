@@ -33,14 +33,17 @@ defmodule Egapp.Parser.XML.EventMan do
   RFC6120 4.8
   """
   def handle_call({"stream:stream", attrs}, _from, state) do
-    case Stream.stream(attrs, state) do
-      {:ok, _} -> {:reply, :continue, state}
-      {:error, _reason} -> {:stop, :normal, state}
+    {status, resp} = Stream.stream(attrs, state)
+    apply(state.mod, :send, [state.to, resp])
+    case status do
+      :ok -> {:reply, :continue, state}
+      :error -> {:stop, :normal, state}
     end
   end
 
   def handle_call({"stream", attrs}, _from, state) do
-    Stream.error(:bad_namespace_prefix, attrs, state)
+    resp = Stream.error(:bad_namespace_prefix, attrs, state)
+    apply(state.mod, :send, [state.to, resp])
     {:stop, :normal, state}
   end
 

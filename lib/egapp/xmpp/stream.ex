@@ -32,7 +32,7 @@ defmodule Egapp.XMPP.Stream do
       |> Enum.reverse()
       |> prepend_xml_decl
 
-    {:ok, apply(state.mod, :send, [state.to, resp])}
+    {:ok, resp}
   end
 
   @doc """
@@ -44,9 +44,9 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), invalid_namespace_error())
       |> :xmerl.export_simple_element(:xmerl_xml)
+      |> prepend_xml_decl
 
-    apply(state.mod, :send, [state.to, resp])
-    {:error, :invalid_namespace}
+    {:error, resp}
   end
 
   @doc """
@@ -58,9 +58,9 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), unsupported_version_error())
       |> :xmerl.export_simple_element(:xmerl_xml)
+      |> prepend_xml_decl
 
-    apply(state.mod, :send, [state.to, resp])
-    {:error, :unsupported_version}
+    {:error, resp}
   end
 
   @doc """
@@ -85,9 +85,9 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
+      |> prepend_xml_decl
 
-    apply(state.mod, :send, [state.to, resp])
-    {:error, reason}
+    {:error, resp}
   end
 
   def error(error, attrs, state) do
@@ -96,11 +96,8 @@ defmodule Egapp.XMPP.Stream do
         :bad_namespace_prefix -> bad_namespace_prefix_error()
       end
 
-    resp =
-      stream_template(build_stream_attrs(attrs, state), content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    apply(state.mod, :send, [state.to, resp])
+    stream_template(build_stream_attrs(attrs, state), content)
+    |> :xmerl.export_simple_element(:xmerl_xml)
   end
 
   defp stream_template(%{id: id, lang: lang, from: from}, content) do
