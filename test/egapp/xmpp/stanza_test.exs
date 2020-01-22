@@ -11,7 +11,7 @@ defmodule Egapp.XMPP.StanzaTest do
     {:ok, state: state}
   end
 
-  test "returns correct bind", %{state: state} do
+  test "returns correct resource binding", %{state: state} do
     id = "#{Enum.random(10_000_000..99_999_999)}"
     attrs = %{"type" => "set", "id" => id}
     child = {"bind", %{"xmlns" => Const.xmlns_bind()}, []}
@@ -34,7 +34,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(foo@bar/123)
   end
 
-  test "returns correct session", %{state: state} do
+  test "returns correct session estabslishment", %{state: state} do
     id = "#{Enum.random(10_000_000..99_999_999)}"
     attrs = %{"type" => "set", "id" => id}
     child = {"session", %{"xmlns" => Const.xmlns_bind()}, []}
@@ -117,5 +117,58 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(vCard)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_vcard() <> ~s(")
+  end
+
+  test "returns correct time", %{state: state} do
+    id = "#{Enum.random(10_000_000..99_999_999)}"
+    attrs = %{"type" => "get", "id" => id}
+    child = {"time", %{"xmlns" => Const.xmlns_time()}, []}
+    state = put_in(state, [:client, :id], 1)
+    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<iq)
+    assert resp =~ ~s(from="egapp.im")
+    assert resp =~ id
+    assert resp =~ ~s(type="result")
+    assert resp =~ ~s(<time)
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_time() <> ~s(")
+  end
+
+  test "returns correct version", %{state: state} do
+    id = "#{Enum.random(10_000_000..99_999_999)}"
+    attrs = %{"type" => "get", "id" => id}
+    child = {"query", %{"xmlns" => Const.xmlns_version()}, []}
+    state = put_in(state, [:client, :id], 1)
+    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<iq)
+    assert resp =~ ~s(from="egapp.im")
+    assert resp =~ id
+    assert resp =~ ~s(type="result")
+    assert resp =~ ~s(<query)
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
+    assert resp =~ ~s(<name)
+    assert resp =~ ~s(<version)
+  end
+
+  @tag :skip
+  test "returns correct last seen", %{state: state} do
+    id = "#{Enum.random(10_000_000..99_999_999)}"
+    attrs = %{"type" => "get", "id" => id}
+    child = {"query", %{"xmlns" => Const.xmlns_last()}, []}
+    state = put_in(state, [:client, :id], 1)
+    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<iq)
+    assert resp =~ ~s(from="egapp.im")
+    assert resp =~ id
+    assert resp =~ ~s(type="result")
+    assert resp =~ ~s(<query)
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
+    assert resp =~ ~s(<name)
+    assert resp =~ ~s(<version)
   end
 end
