@@ -51,31 +51,11 @@ defmodule Egapp.Parser.XML.EventMan do
   def handle_call({"auth", attrs, data}, _from, state) do
     Logger.debug("c2s: #{inspect({"auth", attrs, data})}")
 
-    result =
-      case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
-        {:ok, user} ->
-          state =
-            state
-            |> put_in([:client, :is_authenticated], true)
-            |> put_in([:client, :id], user.id)
-            |> put_in([:client, :bare_jid], user.username <> "@egapp.im")
-            |> put_in([:client, :resource], Enum.random(10_000_000..99_999_999))
-
-          JidConnRegistry.put(user.username <> "@egapp.im", state.to)
-          {:reset, Egapp.XMPP.Element.success(), state}
-
-        {:error, _} ->
-          {:continue, Egapp.XMPP.Element.failure({:"not-authorized", []}), state}
-
-        {:challenge, _} ->
-          {:continue, nil, state}
+    {action, resp, state} =
+      case Stream.auth(attrs, data, state) do
+        {:ok, resp, state} -> {:reset, resp, state}
+        {:error, resp, state} -> {:continue, resp, state}
       end
-
-    {action, element, state} = result
-
-    resp =
-      element
-      |> :xmerl.export_simple_element(:xmerl_xml)
 
     apply(state.mod, :send, [state.to, resp])
     {:reply, action, state}

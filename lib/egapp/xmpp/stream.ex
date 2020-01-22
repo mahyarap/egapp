@@ -1,6 +1,7 @@
 defmodule Egapp.XMPP.Stream do
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Element
+  alias Egapp.JidConnRegistry
 
   @doc """
   RFC6120 4.7
@@ -119,6 +120,33 @@ defmodule Egapp.XMPP.Stream do
       attrs,
       content
     }
+  end
+
+  def auth(attrs, data, state) do
+    result =
+      case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
+        {:ok, user} ->
+          state =
+            state
+            |> put_in([:client, :is_authenticated], true)
+            |> put_in([:client, :id], user.id)
+            |> put_in([:client, :bare_jid], user.username <> "@egapp.im")
+            |> put_in([:client, :resource], Enum.random(10_000_000..99_999_999))
+
+          JidConnRegistry.put(user.username <> "@egapp.im", state.to)
+          {:ok, Element.success(), state}
+
+        {:error, _} ->
+          {:error, Element.failure({:"not-authorized", []}), state}
+
+        {:challenge, _} ->
+          {:error, nil, state}
+      end
+
+    {status, element, state} = result
+    resp = :xmerl.export_simple_element(element, :xmerl_xml)
+
+    {status, resp, state}
   end
 
   defp build_stream_attrs(attrs, state) do
