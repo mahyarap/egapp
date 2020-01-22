@@ -4,7 +4,6 @@ defmodule Egapp.Parser.XML.EventMan do
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Stanza
-  alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
 
   @behaviour GenServer
@@ -61,7 +60,7 @@ defmodule Egapp.Parser.XML.EventMan do
     {:reply, action, state}
   end
 
-  def handle_call({"response", attrs, [xmlcdata: digest_response]}, _from, state) do
+  def handle_call({"response", _attrs, [xmlcdata: digest_response]}, _from, state) do
     rspauth = Egapp.SASL.Digest.validate_digest_response(digest_response)
 
     result = {
@@ -127,8 +126,8 @@ defmodule Egapp.Parser.XML.EventMan do
       case error do
         {4, "not well-formed (invalid token)"} -> "4"
         {7, "mismatched tag"} -> "7"
-        {27, "unbound prefix"} -> Egapp.XMPP.Stream.bad_format_error()
-        {8, "duplicate attribute"} -> Egapp.XMPP.Stream.bad_format_error()
+        {27, "unbound prefix"} -> "8"
+        {8, "duplicate attribute"} -> "9"
         _ -> IO.inspect(error)
       end
 
@@ -157,10 +156,6 @@ defmodule Egapp.Parser.XML.EventMan do
     resp = ['</stream:stream>']
     apply(state.mod, :send, [state.to, resp])
     {:stop, :normal, state}
-  end
-
-  defp prepend_xml_decl(content) do
-    ['<?xml version="1.0"?>' | content]
   end
 
   defp to_map(attrs) do

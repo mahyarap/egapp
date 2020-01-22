@@ -16,7 +16,7 @@ defmodule Egapp.XMPP.Element do
   RFC6120 7.4
   RFC6120 7.6.1
   """
-  def bind(attrs, data, state) do
+  def bind(_attrs, _data, state) do
     full_jid = '#{state.client.bare_jid}/#{state.client.resource}'
 
     {

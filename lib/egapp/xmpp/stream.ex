@@ -71,7 +71,7 @@ defmodule Egapp.XMPP.Stream do
   RFC6120 4.8.1
   """
   def stream(attrs, state) do
-    {content, reason} =
+    {content, _reason} =
       cond do
         not Map.has_key?(attrs, "xmlns:stream") ->
           {bad_namespace_prefix_error(), :bad_namespace_prefix}
@@ -176,14 +176,6 @@ defmodule Egapp.XMPP.Stream do
   defp unsupported_version_error do
     error_template({
       :"unsupported-version",
-      [xmlns: Const.xmlns_stream_error()],
-      []
-    })
-  end
-
-  defp bad_format_error do
-    error_template({
-      :"bad-format",
       [xmlns: Const.xmlns_stream_error()],
       []
     })

@@ -166,13 +166,13 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def message({attrs, [{:xmlel, "composing", _child_attrs, _data}]}) do
+  def message({_attrs, [{:xmlel, "composing", _child_attrs, _data}]}) do
   end
 
-  def message({attrs, [{:xmlel, "paused", _child_attrs, _data}]}) do
+  def message({_attrs, [{:xmlel, "paused", _child_attrs, _data}]}) do
   end
 
-  def message({attrs, [{:xmlel, "active", _child_attrs, _data}]}) do
+  def message({_attrs, [{:xmlel, "active", _child_attrs, _data}]}) do
   end
 
   def message({attrs, [{:xmlel, "active", _child_attrs, _data}, body]}) do
@@ -205,13 +205,12 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def presence(attrs, child, state) do
+  def presence(_attrs, _child, state) do
     roster =
       Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
       |> Egapp.Repo.one()
       |> Egapp.Repo.preload(:users)
 
-    resp =
     roster.users
     |> Enum.map(fn contact ->
       {contact, JidConnRegistry.get(contact.username <> "@egapp.im")}
@@ -231,14 +230,5 @@ defmodule Egapp.XMPP.Stanza do
 
   defp presence_template(%{from: from, to: to}, content) do
     {:presence, [from: from, to: to], content}
-  end
-
-  defp build_presence_attrs(attrs, state) do
-    %{
-      lang: Map.get(state.client, "xml:lang", "en"),
-      id: Map.get(attrs, "id"),
-      from: Map.get(attrs, "from") || "egapp.im",
-      to: Map.get(attrs, "to")
-    }
   end
 end
