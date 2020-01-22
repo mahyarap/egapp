@@ -124,6 +124,37 @@ defmodule Egapp.XMPP.Element do
     query_template([xmlns: Const.xmlns_roster], items)
   end
 
+  def query(%{"xmlns" => Const.xmlns_bytestreams()}, _data, _state) do
+    content = [
+      {
+        :error,
+        [type: 'cancel'],
+        [
+          {
+            :"feature-not-implemented",
+            [xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'],
+            []
+          }
+        ]
+      }
+    ]
+
+    query_template([xmlns: Const.xmlns_disco_info()], content)
+  end
+
+  def query(%{"xmlns" => Const.xmlns_version()}, _data, _state) do
+    content = [
+      {:name, ['egapp']},
+      {:version, ['1.0.0']}
+    ]
+
+    query_template([xmlns: Const.xmlns_version()], content)
+  end
+
+  def query(%{"xmlns" => Const.xmlns_last()}, _data, _state) do
+    query_template([xmlns: Const.xmlns_last()], [])
+  end
+
   defp query_template(attrs, content), do: {:query, attrs, content}
 
   def vcard(%{"xmlns" => Const.xmlns_vcard}, _data, _state) do
@@ -139,6 +170,20 @@ defmodule Egapp.XMPP.Element do
       :ping,
       [xmlns: Const.xmlns_ping],
       []
+    }
+  end
+
+  def time(%{"xmlns" => Const.xmlns_time}, _data, _state) do
+    {:ok, now} = DateTime.now("Etc/UTC")
+    iso_time = DateTime.to_iso8601(now)
+
+    {
+      :time,
+      [xmlns: Const.xmlns_time()],
+      [
+        {:tzo, ['+00:00']},
+        {:utc, [String.to_charlist(iso_time)]}
+      ]
     }
   end
 end
