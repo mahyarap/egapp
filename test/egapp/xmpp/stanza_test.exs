@@ -5,6 +5,7 @@ defmodule Egapp.XMPP.StanzaTest do
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
+
     state = %{
       client: %{}
     }

@@ -5,6 +5,7 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
     content = Element.query(child_attrs, child_data, state)
+
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -14,6 +15,7 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"vCard", child_attrs, child_data}, state) do
     content = Element.vcard(child_attrs, child_data, state)
+
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -23,6 +25,7 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"time", child_attrs, child_data}, state) do
     content = Element.time(child_attrs, child_data, state)
+
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -32,6 +35,7 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"ping", child_attrs, child_data}, state) do
     content = Element.ping(child_attrs, child_data, state)
+
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -41,6 +45,7 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "set"} = attrs, {"bind", child_attrs, child_data}, state) do
     content = Element.bind(child_attrs, child_data, state)
+
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -61,6 +66,7 @@ defmodule Egapp.XMPP.Stanza do
       id: id,
       type: type
     ]
+
     attrs = if from, do: [{:from, from} | iq_attrs], else: iq_attrs
     content = if content, do: [content], else: []
 
@@ -131,9 +137,11 @@ defmodule Egapp.XMPP.Stanza do
         from: "#{state.client.bare_jid}/#{state.client.resource}",
         to: contact.username <> "@egapp.im"
       }
+
       resp =
         presence_template(attrs, [])
         |> :xmerl.export_simple_element(:xmerl_xml)
+
       {conn, resp}
     end)
   end

@@ -35,6 +35,7 @@ defmodule Egapp.Parser.XML.EventMan do
   def handle_call({"stream:stream", attrs}, _from, state) do
     {status, resp} = Stream.stream(attrs, state)
     apply(state.mod, :send, [state.to, resp])
+
     case status do
       :ok -> {:reply, :continue, state}
       :error -> {:stop, :normal, state}
@@ -88,6 +89,7 @@ defmodule Egapp.Parser.XML.EventMan do
 
     {status, resp} = Egapp.XMPP.Stanza.iq(attrs, child_node, state)
     apply(state.mod, :send, [state.to, resp])
+
     case status do
       :ok -> {:reply, :continue, state}
       :error -> {:stop, :normal, state}

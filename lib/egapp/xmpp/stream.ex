@@ -14,7 +14,10 @@ defmodule Egapp.XMPP.Stream do
   RFC6120 4.8.2
   RFC6120 4.8.3
   """
-  def stream(%{"xmlns:stream" => Const.xmlns_stream(), "version" => Const.xmpp_version()} = attrs, state) do
+  def stream(
+        %{"xmlns:stream" => Const.xmlns_stream(), "version" => Const.xmpp_version()} = attrs,
+        state
+      ) do
     features =
       if Map.get(state.client, :is_authenticated) do
         [Element.bind(), Element.session()]
@@ -109,7 +112,7 @@ defmodule Egapp.XMPP.Stream do
       version: '1.0',
       "xml:lang": lang,
       xmlns: 'jabber:client',
-      "xmlns:stream": Const.xmlns_stream
+      "xmlns:stream": Const.xmlns_stream()
     ]
 
     attrs = if from, do: [{:to, from} | stream_attrs], else: stream_attrs

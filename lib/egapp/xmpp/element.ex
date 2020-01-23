@@ -88,11 +88,11 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
-  def query(%{"xmlns" => Const.xmlns_disco_items}, _data, _state) do
-    query_template([xmlns: Const.xmlns_disco_items], [])
+  def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, _state) do
+    query_template([xmlns: Const.xmlns_disco_items()], [])
   end
 
-  def query(%{"xmlns" => Const.xmlns_disco_info}, _data, _state) do
+  def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, _state) do
     query_template(
       [xmlns: Const.xmlns_disco_info()],
       [
@@ -107,21 +107,22 @@ defmodule Egapp.XMPP.Element do
     )
   end
 
-  def query(%{"xmlns" => Const.xmlns_roster}, _data, state) do
+  def query(%{"xmlns" => Const.xmlns_roster()}, _data, state) do
     roster =
       Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
       |> Egapp.Repo.one()
       |> Egapp.Repo.preload(:users)
 
-    items = Enum.map(roster.users, fn user ->
-      {
-        :item,
-        [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'],
-        []
-      }
-    end)
+    items =
+      Enum.map(roster.users, fn user ->
+        {
+          :item,
+          [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'],
+          []
+        }
+      end)
 
-    query_template([xmlns: Const.xmlns_roster], items)
+    query_template([xmlns: Const.xmlns_roster()], items)
   end
 
   def query(%{"xmlns" => Const.xmlns_bytestreams()}, _data, _state) do
@@ -157,23 +158,23 @@ defmodule Egapp.XMPP.Element do
 
   defp query_template(attrs, content), do: {:query, attrs, content}
 
-  def vcard(%{"xmlns" => Const.xmlns_vcard}, _data, _state) do
+  def vcard(%{"xmlns" => Const.xmlns_vcard()}, _data, _state) do
     {
       :vCard,
-      [xmlns: Const.xmlns_vcard],
+      [xmlns: Const.xmlns_vcard()],
       []
     }
   end
 
-  def ping(%{"xmlns" => Const.xmlns_ping}, _data, _state) do
+  def ping(%{"xmlns" => Const.xmlns_ping()}, _data, _state) do
     {
       :ping,
-      [xmlns: Const.xmlns_ping],
+      [xmlns: Const.xmlns_ping()],
       []
     }
   end
 
-  def time(%{"xmlns" => Const.xmlns_time}, _data, _state) do
+  def time(%{"xmlns" => Const.xmlns_time()}, _data, _state) do
     {:ok, now} = DateTime.now("Etc/UTC")
     iso_time = DateTime.to_iso8601(now)
 

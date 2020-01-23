@@ -25,8 +25,10 @@ defmodule Egapp.SASL.Plain do
     cond do
       user == nil ->
         {:error, :user_not_found}
+
       password != user.password ->
         {:error, :password_mismatch}
+
       true ->
         {:ok, user}
     end
