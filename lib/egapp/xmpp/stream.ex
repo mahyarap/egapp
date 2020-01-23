@@ -35,7 +35,7 @@ defmodule Egapp.XMPP.Stream do
       |> Enum.reverse()
       |> tl()
       |> Enum.reverse()
-      |> prepend_xml_decl
+      |> prepend_xml_decl()
 
     {:ok, resp}
   end
@@ -49,7 +49,7 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), invalid_namespace_error())
       |> :xmerl.export_simple_element(:xmerl_xml)
-      |> prepend_xml_decl
+      |> prepend_xml_decl()
 
     {:error, resp}
   end
@@ -63,7 +63,7 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), unsupported_version_error())
       |> :xmerl.export_simple_element(:xmerl_xml)
-      |> prepend_xml_decl
+      |> prepend_xml_decl()
 
     {:error, resp}
   end
@@ -75,14 +75,12 @@ defmodule Egapp.XMPP.Stream do
   RFC6120 4.8.1
   """
   def stream(attrs, state) do
-    {content, _reason} =
+    content =
       cond do
         not Map.has_key?(attrs, "xmlns:stream") ->
-          {bad_namespace_prefix_error(), :bad_namespace_prefix}
-
+          bad_namespace_prefix_error()
         not Map.has_key?(attrs, "version") ->
-          {unsupported_version_error(), :unsupported_version}
-
+          unsupported_version_error()
         true ->
           "should not get here"
       end
@@ -90,20 +88,15 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
-      |> prepend_xml_decl
+      |> prepend_xml_decl()
 
     {:error, resp}
   end
 
-  def error(error, attrs, state) do
-    content =
-      case error do
-        :bad_namespace_prefix -> bad_namespace_prefix_error()
-      end
-
-    stream_template(build_stream_attrs(attrs, state), content)
+  def error(:bad_namespace_prefix , attrs, state) do
+    stream_template(build_stream_attrs(attrs, state), bad_namespace_prefix_error())
     |> :xmerl.export_simple_element(:xmerl_xml)
-    |> prepend_xml_decl
+    |> prepend_xml_decl()
   end
 
   defp build_stream_attrs(attrs, state) do
