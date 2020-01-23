@@ -4,6 +4,7 @@ defmodule Egapp.XMPP.StanzaTest do
   alias Egapp.XMPP.Stanza
 
   setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
     state = %{
       client: %{}
     }
@@ -102,12 +103,16 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(xmlns=") <> Const.xmlns_vcard() <> ~s(")
   end
 
-  @tag :skip
   test "returns correct roster", %{state: state} do
     id = "#{Enum.random(10_000_000..99_999_999)}"
     attrs = %{"type" => "get", "id" => id}
     child = {"query", %{"xmlns" => Const.xmlns_roster()}, []}
-    state = put_in(state, [:client, :id], 1)
+
+    user = Egapp.Repo.insert!(%Egapp.Repo.User{username: "foo"})
+    contact = Egapp.Repo.insert!(%Egapp.Repo.User{username: "bar"})
+    Egapp.Repo.insert!(%Egapp.Repo.Roster{user: user, users: [contact]})
+
+    state = put_in(state, [:client, :id], user.id)
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
@@ -115,8 +120,10 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(from="egapp.im")
     assert resp =~ id
     assert resp =~ ~s(type="result")
-    assert resp =~ ~s(vCard)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_vcard() <> ~s(")
+    assert resp =~ ~s(<query)
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_roster() <> ~s(")
+    assert resp =~ ~s(<item)
+    assert resp =~ ~s(jid="bar@egapp.im")
   end
 
   test "returns correct time", %{state: state} do
