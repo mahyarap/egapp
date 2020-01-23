@@ -7,7 +7,8 @@ defmodule Egapp.MixProject do
       version: "0.1.0",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -26,6 +27,12 @@ defmodule Egapp.MixProject do
       # {:fast_xml, git: "https://github.com/processone/fast_xml.git", tag: "1.1.37"},
       {:ecto_sql, "~> 3.2"},
       {:postgrex, ">= 0.0.0"}
+    ]
+  end
+
+  defp aliases do
+    [
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
     ]
   end
 end
