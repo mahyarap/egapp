@@ -1,5 +1,6 @@
 defmodule Egapp.XMPP.Stream do
   require Egapp.Constants, as: Const
+  alias Egapp.Utils
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
 
@@ -105,6 +106,14 @@ defmodule Egapp.XMPP.Stream do
     |> prepend_xml_decl
   end
 
+  defp build_stream_attrs(attrs, state) do
+    %{
+      lang: Map.get(state.client, "xml:lang", "en"),
+      id: Utils.generate_id(),
+      from: Map.get(attrs, "from")
+    }
+  end
+
   defp stream_template(%{id: id, lang: lang, from: from}, content) do
     stream_attrs = [
       from: 'egapp.im',
@@ -134,7 +143,7 @@ defmodule Egapp.XMPP.Stream do
             |> put_in([:client, :is_authenticated], true)
             |> put_in([:client, :id], user.id)
             |> put_in([:client, :bare_jid], user.username <> "@egapp.im")
-            |> put_in([:client, :resource], Enum.random(10_000_000..99_999_999))
+            |> put_in([:client, :resource], Utils.generate_id())
 
           JidConnRegistry.put(user.username <> "@egapp.im", state.to)
           {:ok, Element.success(), state}
@@ -150,14 +159,6 @@ defmodule Egapp.XMPP.Stream do
     resp = :xmerl.export_simple_element(element, :xmerl_xml)
 
     {status, resp, state}
-  end
-
-  defp build_stream_attrs(attrs, state) do
-    %{
-      lang: Map.get(state.client, "xml:lang", "en"),
-      id: Enum.random(10_000_000..99_999_999),
-      from: Map.get(attrs, "from")
-    }
   end
 
   defp error_template(err) do
