@@ -3,6 +3,20 @@ defmodule Egapp.Parser.XML.FSM do
 
   @behaviour :gen_fsm
 
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
+  end
+
+  def start_link(args) do
+    :gen_fsm.start_link(__MODULE__, args, [])
+  end
+
   @impl true
   def init(args) do
     event_man = Keyword.fetch!(args, :event_man)
