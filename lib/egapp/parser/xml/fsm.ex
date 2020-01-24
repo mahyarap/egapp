@@ -31,7 +31,7 @@ defmodule Egapp.Parser.XML.FSM do
 
   @impl true
   def handle_info(info, state, data) do
-    IO.inspect({info, state, data})
+    Logger.debug("fsm: #{inspect({info, state, data})}")
   end
 
   @impl true
@@ -43,7 +43,7 @@ defmodule Egapp.Parser.XML.FSM do
 
   @impl true
   def handle_sync_event(a, b, c, d) do
-    IO.inspect({a, b, c, d})
+    Logger.debug("fsm: #{inspect({a, b, c, d})}")
     {a, b, c, d}
   end
 
@@ -61,18 +61,18 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def begin({:xmlstreamerror, error}, state) do
-    IO.inspect({:xml_stream_error, error, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_error, error, state})}")
     GenServer.call(state.event_man, {:error, error})
     {:stop, :normal, state}
   end
 
   def xml_stream_start({:xmlstreamelement, tag_name, attrs}, state) do
-    IO.inspect({:xml_stream_element, tag_name, attrs, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_element, tag_name, attrs, state})}")
     {:next_state, :xml_stream_element, state}
   end
 
   def xml_stream_start({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
-    IO.inspect({:xml_stream_element, child, to_map(attrs), data, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_element, child, to_map(attrs), data, state})}")
 
     next_state =
       case GenServer.call(state.event_man, {child, to_map(attrs), remove_whitespace(data)}) do
@@ -84,26 +84,26 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def xml_stream_start({:xmlstreamend, tag_name}, state) do
-    IO.inspect({:xml_stream_end, tag_name, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_end, tag_name, state})}")
     {:next_state, :xml_stream_start, state}
   end
 
   def xml_stream_start({:xmlstreamerror, foo}, state) do
-    IO.inspect({:xmlstreamerror, foo, state})
+    Logger.debug("fsm: #{inspect({:xmlstreamerror, foo, state})}")
   end
 
   def xml_stream_end({:xmlstreamend, data}, state) do
-    IO.inspect({:xml_end, data, state})
+    Logger.debug("fsm: #{inspect({:xml_end, data, state})}")
     {:next_state, :xml_stream_start, state}
   end
 
   def xml_stream_element({:xmlstreamcdata, data}, state) do
-    IO.inspect({:xml_stream_cdata, data, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_cdata, data, state})}")
     {:next_state, :xml_stream_cdata, state}
   end
 
   def xml_stream_element({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
-    IO.inspect({:xml_stream_element, child, attrs, data, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_element, child, attrs, data, state})}")
     GenServer.call(state.event_man, {child, to_map(attrs), remove_whitespace(data)})
     {:next_state, :xml_stream_element, state}
   end
@@ -114,12 +114,12 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def xml_stream_cdata({:xmlstreamelement, tag_name, attrs}, state) do
-    IO.inspect({:xml_stream_element, tag_name, attrs, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_element, tag_name, attrs, state})}")
     {:next_state, :xml_stream_element, state}
   end
 
   def xml_stream_cdata({:xmlstreamelement, tag_name}, state) do
-    IO.inspect({:xml_stream_element, tag_name, state})
+    Logger.debug("fsm: #{inspect({:xml_stream_element, tag_name, state})}")
     {:next_state, :xml_stream_element, state}
   end
 
