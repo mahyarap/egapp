@@ -1,11 +1,12 @@
 defmodule Egapp.Parser.XML.EventMan do
+  use GenServer
+
   require Logger
   require Ecto.Query
   require Egapp.Constants, as: Const
+
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Stanza
-
-  @behaviour GenServer
 
   @impl true
   def init(args) do
@@ -18,6 +19,10 @@ defmodule Egapp.Parser.XML.EventMan do
     }
 
     {:ok, state}
+  end
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
   end
 
   @impl true
