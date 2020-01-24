@@ -34,7 +34,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(bind)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_bind() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_bind()}")
     assert resp =~ ~s(<jid>)
     assert resp =~ ~s(foo@bar/123)
   end
@@ -63,7 +63,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(query)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_items() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
   end
 
   test "returns correct disco info", %{state: state} do
@@ -81,12 +81,12 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(<identity)
     assert resp =~ ~s(type="im")
     assert resp =~ ~s(category="server")
-    assert resp =~ ~s(feature var=") <> Const.xmlns_disco_items() <> ~s(")
-    assert resp =~ ~s(feature var=") <> Const.xmlns_disco_info() <> ~s(")
-    assert resp =~ ~s(feature var=") <> Const.xmlns_ping() <> ~s(")
-    assert resp =~ ~s(feature var=") <> Const.xmlns_vcard() <> ~s(")
-    assert resp =~ ~s(feature var=") <> Const.xmlns_version() <> ~s(")
-    assert resp =~ ~s(feature var=") <> Const.xmlns_last() <> ~s(")
+    assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_ping()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_version()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_last()}")
   end
 
   test "returns correct vcard", %{state: state} do
@@ -100,7 +100,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(vCard)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_vcard() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_vcard()}")
   end
 
   test "returns correct roster", %{state: state} do
@@ -120,7 +120,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<query)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_roster() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_roster()}")
     assert resp =~ ~s(<item)
     assert resp =~ ~s(jid="bar@egapp.im")
   end
@@ -137,7 +137,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<time)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_time() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_time()}")
   end
 
   test "returns correct version", %{state: state} do
@@ -152,7 +152,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<query)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_version()}")
     assert resp =~ ~s(<name)
     assert resp =~ ~s(<version)
   end
@@ -170,7 +170,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<query)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_version()}")
     assert resp =~ ~s(<name)
     assert resp =~ ~s(<version)
   end
@@ -193,6 +193,6 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ state.id
     assert resp =~ ~s(type="chat")
     assert resp =~ ~s(<active)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_chatstates() <> ~s(")
+    assert resp =~ ~s(xmlns="#{Const.xmlns_chatstates()}")
   end
 end
