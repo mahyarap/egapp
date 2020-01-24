@@ -1,21 +1,22 @@
 defmodule Egapp.XMPP.StanzaTest do
   use ExUnit.Case, async: true
   require Egapp.Constants, as: Const
+  alias Egapp.Utils
   alias Egapp.XMPP.Stanza
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
 
     state = %{
-      client: %{}
+      client: %{},
+      id: Utils.generate_id() |> Integer.to_string()
     }
 
     {:ok, state: state}
   end
 
   test "returns correct resource binding", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "set", "id" => id}
+    attrs = %{"type" => "set", "id" => state.id}
     child = {"bind", %{"xmlns" => Const.xmlns_bind()}, []}
 
     state =
@@ -28,7 +29,7 @@ defmodule Egapp.XMPP.StanzaTest do
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(bind)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_bind() <> ~s(")
@@ -37,8 +38,7 @@ defmodule Egapp.XMPP.StanzaTest do
   end
 
   test "returns correct session estabslishment", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "set", "id" => id}
+    attrs = %{"type" => "set", "id" => state.id}
     child = {"session", %{"xmlns" => Const.xmlns_bind()}, []}
 
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
@@ -46,35 +46,33 @@ defmodule Egapp.XMPP.StanzaTest do
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
   end
 
   test "returns correct disco items", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"query", %{"xmlns" => Const.xmlns_disco_items()}, []}
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(query)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_items() <> ~s(")
   end
 
   test "returns correct disco info", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(query)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
@@ -90,23 +88,21 @@ defmodule Egapp.XMPP.StanzaTest do
   end
 
   test "returns correct vcard", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"vCard", %{"xmlns" => Const.xmlns_vcard()}, []}
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(vCard)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_vcard() <> ~s(")
   end
 
   test "returns correct roster", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"query", %{"xmlns" => Const.xmlns_roster()}, []}
 
     user = Egapp.Repo.insert!(%Egapp.Repo.User{username: "foo"})
@@ -119,7 +115,7 @@ defmodule Egapp.XMPP.StanzaTest do
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<query)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_roster() <> ~s(")
@@ -128,8 +124,7 @@ defmodule Egapp.XMPP.StanzaTest do
   end
 
   test "returns correct time", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"time", %{"xmlns" => Const.xmlns_time()}, []}
     state = put_in(state, [:client, :id], 1)
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
@@ -137,15 +132,14 @@ defmodule Egapp.XMPP.StanzaTest do
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<time)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_time() <> ~s(")
   end
 
   test "returns correct version", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"query", %{"xmlns" => Const.xmlns_version()}, []}
     state = put_in(state, [:client, :id], 1)
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
@@ -153,7 +147,7 @@ defmodule Egapp.XMPP.StanzaTest do
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<query)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
@@ -163,8 +157,7 @@ defmodule Egapp.XMPP.StanzaTest do
 
   @tag :skip
   test "returns correct last seen", %{state: state} do
-    id = "#{Enum.random(10_000_000..99_999_999)}"
-    attrs = %{"type" => "get", "id" => id}
+    attrs = %{"type" => "get", "id" => state.id}
     child = {"query", %{"xmlns" => Const.xmlns_last()}, []}
     state = put_in(state, [:client, :id], 1)
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
@@ -172,7 +165,7 @@ defmodule Egapp.XMPP.StanzaTest do
 
     assert resp =~ ~s(<iq)
     assert resp =~ ~s(from="egapp.im")
-    assert resp =~ id
+    assert resp =~ state.id
     assert resp =~ ~s(type="result")
     assert resp =~ ~s(<query)
     assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
