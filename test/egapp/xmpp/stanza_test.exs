@@ -3,9 +3,11 @@ defmodule Egapp.XMPP.StanzaTest do
   require Egapp.Constants, as: Const
   alias Egapp.Utils
   alias Egapp.XMPP.Stanza
+  alias Egapp.JidConnRegistry
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
+    start_supervised!(JidConnRegistry)
 
     state = %{
       client: %{},
@@ -171,5 +173,26 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(xmlns=") <> Const.xmlns_version() <> ~s(")
     assert resp =~ ~s(<name)
     assert resp =~ ~s(<version)
+  end
+
+  test "returns correct message", %{state: state} do
+    attrs = %{
+      "type" => "chat",
+      "id" => state.id,
+      "to" => "baz@buf"
+    }
+    child = [{"active", %{"xmlns" => Const.xmlns_version()}, []}]
+    JidConnRegistry.put("foo@bar", [])
+    state = put_in(state, [:client, :bare_jid], "foo@bar")
+    state = put_in(state, [:client, :resource], "123")
+    assert {:ok, {to, resp}} = Stanza.message(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<message)
+    assert resp =~ ~s(from="foo@bar/123")
+    assert resp =~ state.id
+    assert resp =~ ~s(type="chat")
+    assert resp =~ ~s(<active)
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_chatstates() <> ~s(")
   end
 end
