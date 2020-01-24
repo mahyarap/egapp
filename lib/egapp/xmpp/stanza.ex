@@ -1,7 +1,10 @@
 defmodule Egapp.XMPP.Stanza do
   require Ecto.Query
+  require Egapp.Constants, as: Const
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
+
+  @bare_jid_re ~r|^(?<localpart>[^@]+)@(?<domainpart>[^/]+)|
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
     content = Element.query(child_attrs, child_data, state)
@@ -82,43 +85,59 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def message({_attrs, [{:xmlel, "composing", _child_attrs, _data}]}) do
+  def message(%{"type" => "chat"} = attrs, children, state) do
+    bare_jid = Regex.named_captures(@bare_jid_re, attrs["to"])
+    to = JidConnRegistry.get(bare_jid["localpart"] <> "@" <> bare_jid["domainpart"])
+    attrs = Map.put(attrs, "from", "#{state.client.bare_jid}/#{state.client.resource}")
+
+    content =
+      children
+      |> Enum.map(fn {tag_name, attrs, data} ->
+        do_message(tag_name, attrs, data)
+      end)
+
+    resp =
+      message_template(build_message_attrs(attrs, state), content)
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:ok, {to, resp}}
   end
 
-  def message({_attrs, [{:xmlel, "paused", _child_attrs, _data}]}) do
+  defp do_message("active", _attrs, _data) do
+    {:active, [xmlns: Const.xmlns_chatstates], []}
   end
 
-  def message({_attrs, [{:xmlel, "active", _child_attrs, _data}]}) do
+  defp do_message("composing", _attrs, _data) do
+    {:composing, [xmlns: Const.xmlns_chatstates], []}
   end
 
-  def message({attrs, [{:xmlel, "active", _child_attrs, _data}, body]}) do
-    {:xmlel, "body", [], [xmlcdata: msg]} = body
+  defp do_message("paused", _attrs, _data) do
+    {:paused, [xmlns: Const.xmlns_chatstates], []}
+  end
 
-    {
-      :message,
-      [
-        from: String.to_charlist(attrs["from"]),
-        id: String.to_charlist(attrs["id"]),
-        to: String.to_charlist(attrs["to"]),
-        type: 'chat',
-        "xml:lang": 'en'
-      ],
-      [{:body, [String.to_charlist(msg)]}]
+  defp do_message("body", _attrs, data) do
+    [xmlcdata: body] = data
+    {:body, [String.to_charlist(body)]}
+  end
+
+  defp build_message_attrs(attrs, _state) do
+    %{
+      id: Map.get(attrs, "id"),
+      from: Map.get(attrs, "from"),
+      to: Map.get(attrs, "to"),
+      type: Map.get(attrs, "type")
     }
   end
 
-  def message({attrs, [{:xmlel, "body", [], [xmlcdata: msg]}]}) do
-    {
-      :message,
-      [
-        from: 'foo@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
-        id: '#{attrs["id"]}',
-        to: 'gooz@egapp.im/4db06f06-1ea4-11dc-aca3-000bcd821bfb',
-        type: 'chat',
-        "xml:lang": 'en'
-      ],
-      [{:body, [String.to_charlist(msg)]}]
-    }
+  defp message_template(%{id: id, to: to, from: from, type: type}, data) do
+    iq_attrs = [
+      id: id,
+      from: from,
+      to: to,
+      type: type
+    ]
+
+    {:message, iq_attrs, data}
   end
 
   def presence(_attrs, _child, state) do

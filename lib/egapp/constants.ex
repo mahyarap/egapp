@@ -41,6 +41,7 @@ defmodule Egapp.Constants do
   const xmlns_bind,         "urn:ietf:params:xml:ns:xmpp-bind"
   const xmlns_bytestreams,  "http://jabber.org/protocol/bytestreams"
   const xmlns_c2s,          "jabber:client"
+  const xmlns_chatstates,   "http://jabber.org/protocol/chatstates"
   const xmlns_disco_info,   "http://jabber.org/protocol/disco#info"
   const xmlns_disco_items,  "http://jabber.org/protocol/disco#items"
   const xmlns_last,         "jabber:iq:last"

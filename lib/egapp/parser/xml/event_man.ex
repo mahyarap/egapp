@@ -4,11 +4,8 @@ defmodule Egapp.Parser.XML.EventMan do
   require Egapp.Constants, as: Const
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Stanza
-  alias Egapp.JidConnRegistry
 
   @behaviour GenServer
-
-  @bare_jid_re ~r|^(?<localpart>[^@]+)@(?<domainpart>[^/]+)|
 
   @impl true
   def init(args) do
@@ -111,12 +108,16 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   def handle_call({"message", attrs, data}, _from, state) do
-    bare_jid = Regex.named_captures(@bare_jid_re, attrs["to"])
-    to = JidConnRegistry.get(bare_jid["localpart"] <> "@" <> bare_jid["domainpart"])
-    attrs = Map.put(attrs, "from", "#{state.client.bare_jid}/#{state.client.resource}")
-    resp = Egapp.XMPP.Stanza.message({attrs, data})
-    resp = if resp, do: :xmerl.export_simple_element(resp, :xmerl_xml), else: []
+    Logger.debug("c2s: #{inspect({"message", attrs, data})}")
 
+    children =
+      data
+      |> Enum.map(fn child ->
+        {:xmlel, tag_name, attrs, data} = child
+        {tag_name, to_map(attrs), data}
+      end)
+
+    {:ok, {to, resp}} = Egapp.XMPP.Stanza.message(attrs, children, state)
     apply(state.mod, :send, [to, resp])
     {:reply, :continue, state}
   end
