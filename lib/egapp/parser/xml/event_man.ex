@@ -128,36 +128,34 @@ defmodule Egapp.Parser.XML.EventMan do
   end
 
   def handle_call({:error, error}, _from, state) do
-    id = Enum.random(10_000_000..99_999_999)
-
-    content =
-      case error do
-        {4, "not well-formed (invalid token)"} -> "4"
-        {7, "mismatched tag"} -> "7"
-        {27, "unbound prefix"} -> "8"
-        {8, "duplicate attribute"} -> "9"
-        _ -> IO.inspect(error)
-      end
-
     resp =
-      Stream.stream(content, id: id)
-      |> :xmerl.export_simple_element(:xmerl_xml)
+      case error do
+        {2, "syntax error"} ->
+          Stream.error(:bad_format, %{}, state)
+
+        {4, "not well-formed (invalid token)"} ->
+          Stream.error(:not_well_formed, %{}, state)
+
+        {7, "mismatched tag"} ->
+          Stream.error(:bad_format, %{}, state)
+
+        {27, "unbound prefix"} ->
+          Stream.error(:not_well_formed, %{}, state)
+
+        {8, "duplicate attribute"} ->
+          Stream.error(:not_well_formed, %{}, state)
+
+        _ -> raise "should not get here"
+      end
 
     apply(state.mod, :send, [state.to, resp])
     {:stop, :normal, state}
   end
 
-  def handle_call({_tag_name, _attrs}, _from, state) do
-    resp = """
-    <stream:error>
-    <invalid-xml
-    xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-    </stream:error>
-    </stream:stream>
-    """
-
+  def handle_call({_tag_name, attrs}, _from, state) do
+    resp = Stream.error(:not_well_formed, attrs, state)
     apply(state.mod, :send, [state.to, resp])
-    {:noreply, state}
+    {:stop, :normal, state}
   end
 
   def handle_call({"end"}, _from, state) do

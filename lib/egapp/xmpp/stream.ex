@@ -93,8 +93,20 @@ defmodule Egapp.XMPP.Stream do
     {:error, resp}
   end
 
-  def error(:bad_namespace_prefix , attrs, state) do
+  def error(:bad_namespace_prefix, attrs, state) do
     stream_template(build_stream_attrs(attrs, state), bad_namespace_prefix_error())
+    |> :xmerl.export_simple_element(:xmerl_xml)
+    |> prepend_xml_decl()
+  end
+
+  def error(:bad_format, attrs, state) do
+    stream_template(build_stream_attrs(attrs, state), bad_format_error())
+    |> :xmerl.export_simple_element(:xmerl_xml)
+    |> prepend_xml_decl()
+  end
+
+  def error(:not_well_formed, attrs, state) do
+    stream_template(build_stream_attrs(attrs, state), not_well_formed_error())
     |> :xmerl.export_simple_element(:xmerl_xml)
     |> prepend_xml_decl()
   end
@@ -160,6 +172,22 @@ defmodule Egapp.XMPP.Stream do
       [],
       [err]
     }
+  end
+
+  defp bad_format_error do
+    error_template({
+      :"bad-format",
+      [xmlns: Const.xmlns_stream_error()],
+      []
+    })
+  end
+
+  defp not_well_formed_error do
+    error_template({
+      :"not-well-formed",
+      [xmlns: Const.xmlns_stream_error()],
+      []
+    })
   end
 
   defp invalid_namespace_error do
