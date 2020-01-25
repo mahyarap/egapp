@@ -1,6 +1,7 @@
 defmodule Egapp.XMPP.Element do
   require Ecto.Query
   require Egapp.Constants, as: Const
+  alias Egapp.XMPP.Jid
 
   @doc """
   RFC6120 4.3.2
@@ -17,7 +18,7 @@ defmodule Egapp.XMPP.Element do
   RFC6120 7.6.1
   """
   def bind(_attrs, _data, state) do
-    full_jid = '#{state.client.bare_jid}/#{state.client.resource}'
+    full_jid = Jid.full_jid(state.client.jid) |> String.to_charlist()
 
     {
       :bind,

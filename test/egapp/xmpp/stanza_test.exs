@@ -2,6 +2,7 @@ defmodule Egapp.XMPP.StanzaTest do
   use ExUnit.Case, async: true
   require Egapp.Constants, as: Const
   alias Egapp.Utils
+  alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Stanza
   alias Egapp.JidConnRegistry
 
@@ -21,10 +22,8 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"type" => "set", "id" => state.id}
     child = {"bind", %{"xmlns" => Const.xmlns_bind()}, []}
 
-    state =
-      state
-      |> put_in([:client, :bare_jid], "foo@bar")
-      |> put_in([:client, :resource], "123")
+    jid = %Jid{localpart: "foo", domainpart: "bar", resourcepart: "123"}
+    state = put_in(state, [:client, :jid], jid)
 
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
@@ -182,9 +181,10 @@ defmodule Egapp.XMPP.StanzaTest do
       "to" => "baz@buf"
     }
     child = [{"active", %{"xmlns" => Const.xmlns_version()}, []}]
-    JidConnRegistry.put("foo@bar", [])
-    state = put_in(state, [:client, :bare_jid], "foo@bar")
-    state = put_in(state, [:client, :resource], "123")
+    jid = %Jid{localpart: "foo", domainpart: "bar", resourcepart: "123"}
+    state = put_in(state, [:client, :jid], jid)
+    JidConnRegistry.put(Jid.bare_jid(jid), [])
+
     assert {:ok, {to, resp}} = Stanza.message(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 

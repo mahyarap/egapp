@@ -1,6 +1,7 @@
 defmodule Egapp.XMPP.Stream do
   require Egapp.Constants, as: Const
   alias Egapp.Utils
+  alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
 
@@ -143,14 +144,19 @@ defmodule Egapp.XMPP.Stream do
     result =
       case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
         {:ok, user} ->
+          jid = %Jid{
+            localpart: user.username,
+            domainpart: "egapp.im",
+            resourcepart: Utils.generate_id() |> Integer.to_string()
+          }
+
           state =
             state
             |> put_in([:client, :is_authenticated], true)
             |> put_in([:client, :id], user.id)
-            |> put_in([:client, :bare_jid], user.username <> "@egapp.im")
-            |> put_in([:client, :resource], Utils.generate_id())
+            |> put_in([:client, :jid], jid)
 
-          JidConnRegistry.put(user.username <> "@egapp.im", state.to)
+          JidConnRegistry.put(Jid.bare_jid(jid), state.to)
           {:ok, Element.success(), state}
 
         {:error, _} ->

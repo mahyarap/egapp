@@ -1,10 +1,10 @@
 defmodule Egapp.XMPP.Stanza do
   require Ecto.Query
   require Egapp.Constants, as: Const
+
+  alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
-
-  @bare_jid_re ~r|^(?<localpart>[^@]+)@(?<domainpart>[^/]+)|
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
     content = Element.query(child_attrs, child_data, state)
@@ -86,9 +86,8 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def message(%{"type" => "chat"} = attrs, children, state) do
-    bare_jid = Regex.named_captures(@bare_jid_re, attrs["to"])
-    to = JidConnRegistry.get(bare_jid["localpart"] <> "@" <> bare_jid["domainpart"])
-    attrs = Map.put(attrs, "from", "#{state.client.bare_jid}/#{state.client.resource}")
+    to = JidConnRegistry.get(Jid.bare_jid(state.client.jid))
+    attrs = Map.put(attrs, "from", Jid.full_jid(state.client.jid))
 
     content =
       children
@@ -153,7 +152,7 @@ defmodule Egapp.XMPP.Stanza do
     |> Enum.filter(&elem(&1, 1))
     |> Enum.map(fn {contact, conn} ->
       attrs = %{
-        from: "#{state.client.bare_jid}/#{state.client.resource}",
+        from: Jid.full_jid(state.client.jid),
         to: contact.username <> "@egapp.im"
       }
 
