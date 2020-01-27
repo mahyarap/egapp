@@ -180,6 +180,7 @@ defmodule Egapp.XMPP.StanzaTest do
       "id" => state.id,
       "to" => "baz@buf"
     }
+
     child = [{"active", %{"xmlns" => Const.xmlns_version()}, []}]
     jid = %Jid{localpart: "foo", domainpart: "bar", resourcepart: "123"}
     state = put_in(state, [:client, :jid], jid)

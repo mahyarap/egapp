@@ -7,9 +7,13 @@ defmodule Egapp.XMPP.FSM do
 
   @behaviour :gen_statem
 
+  @impl true
   def callback_mode, do: :state_functions
 
+  @impl true
   def init(args) do
+    init_state = Keyword.get(args, :init_state, :stream_init)
+
     state = %{
       mod: Keyword.fetch!(args, :mod),
       to: Keyword.fetch!(args, :to),
@@ -18,7 +22,11 @@ defmodule Egapp.XMPP.FSM do
       }
     }
 
-    {:ok, :stream_init, state}
+    {:ok, init_state, state}
+  end
+
+  def start_link(args, opts \\ []) do
+    :gen_statem.start_link(__MODULE__, args, opts)
   end
 
   def stream_init(
@@ -31,7 +39,7 @@ defmodule Egapp.XMPP.FSM do
 
     case status do
       :ok -> {:next_state, :auth, state, {:reply, from, :continue}}
-      :error -> {:stop, :normal, state, {:reply, from, :stop}}
+      :error -> {:stop_and_reply, :normal, {:reply, from, :stop}, state}
     end
   end
 
@@ -45,29 +53,31 @@ defmodule Egapp.XMPP.FSM do
 
     case status do
       :ok -> {:next_state, :bind, state, {:reply, from, :continue}}
-      :error -> {:stop, :normal, state, {:reply, from, :stop}}
+      :error -> {:stop, :normal, {:reply, from, :stop}, state}
     end
   end
 
   def stream_init({:call, from}, {_tag_name, attrs}, state) do
     resp = Stream.error(:not_well_formed, attrs, state)
     apply(state.mod, :send, [state.to, resp])
-    {:stop, :normal, state, {:reply, from, :stop}}
+    {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
-
-  # def feat_nego({:call, _from}, {}, state) do
-  #   {:next_state, :auth, state, {:reply, from, :continue}}
-  # end
 
   def auth({:call, from}, {"auth", attrs, data}, state) do
     {next_state, action, resp, state} =
       case Stream.auth(attrs, data, state) do
         {:ok, resp, state} -> {:stream_init, :reset, resp, state}
-        {:error, resp, state} -> {:auth, :continue, resp, state}
+        {:retry, resp, state} -> {:auth, :continue, resp, state}
+        {:error, resp, state} -> {nil, :stop, resp, state}
       end
 
     apply(state.mod, :send, [state.to, resp])
-    {:next_state, next_state, state, {:reply, from, action}}
+
+    if next_state do
+      {:next_state, next_state, state, {:reply, from, action}}
+    else
+      {:stop_and_reply, :noraml, {:reply, from, action}, state}
+    end
   end
 
   def bind({:call, from}, {"iq", attrs, data}, state) do

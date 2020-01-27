@@ -39,7 +39,7 @@ defmodule Egapp.Parser.FSMTest do
     :fxml_stream.new(fsm)
     |> :fxml_stream.parse(stream)
 
-    catch_exit :sys.get_state(fsm)
+    catch_exit(:sys.get_state(fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
@@ -56,7 +56,7 @@ defmodule Egapp.Parser.FSMTest do
     :fxml_stream.new(fsm)
     |> :fxml_stream.parse(stream)
 
-    catch_exit :sys.get_state(fsm)
+    catch_exit(:sys.get_state(fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
@@ -73,7 +73,7 @@ defmodule Egapp.Parser.FSMTest do
     :fxml_stream.new(fsm)
     |> :fxml_stream.parse(stream)
 
-    catch_exit :sys.get_state(fsm)
+    catch_exit(:sys.get_state(fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
@@ -90,7 +90,7 @@ defmodule Egapp.Parser.FSMTest do
     :fxml_stream.new(fsm)
     |> :fxml_stream.parse(stream)
 
-    catch_exit :sys.get_state(fsm)
+    catch_exit(:sys.get_state(fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
@@ -105,7 +105,7 @@ defmodule Egapp.Parser.FSMTest do
     :fxml_stream.new(fsm)
     |> :fxml_stream.parse(stream)
 
-    catch_exit :sys.get_state(fsm)
+    catch_exit(:sys.get_state(fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
@@ -129,9 +129,10 @@ defmodule Egapp.Parser.FSMTest do
     """
 
     assert {:begin, _} = :sys.get_state(fsm)
+
     stream =
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(foo)
+      :fxml_stream.new(fsm)
+      |> :fxml_stream.parse(foo)
 
     assert {:xml_stream_start, _} = :sys.get_state(fsm)
     :fxml_stream.parse(stream, bar)

@@ -47,8 +47,12 @@ defmodule Egapp.XMPP.Stream do
   RFC6120 4.8.1
   """
   def stream(%{"xmlns:stream" => _, "version" => Const.xmpp_version()} = attrs, state) do
+    error =
+      invalid_namespace_error(Const.xmlns_stream_error())
+      |> stream_error_template()
+
     resp =
-      stream_template(build_stream_attrs(attrs, state), invalid_namespace_error())
+      stream_template(build_stream_attrs(attrs, state), error)
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> prepend_xml_decl()
 
@@ -61,8 +65,12 @@ defmodule Egapp.XMPP.Stream do
   RFC6120 4.7.5
   """
   def stream(%{"xmlns:stream" => _, "version" => _} = attrs, state) do
+    error =
+      unsupported_version_error(Const.xmlns_stream_error())
+      |> stream_error_template()
+
     resp =
-      stream_template(build_stream_attrs(attrs, state), unsupported_version_error())
+      stream_template(build_stream_attrs(attrs, state), error)
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> prepend_xml_decl()
 
@@ -79,9 +87,13 @@ defmodule Egapp.XMPP.Stream do
     content =
       cond do
         not Map.has_key?(attrs, "xmlns:stream") ->
-          bad_namespace_prefix_error()
+          bad_namespace_prefix_error(Const.xmlns_stream_error())
+          |> stream_error_template()
+
         not Map.has_key?(attrs, "version") ->
-          unsupported_version_error()
+          unsupported_version_error(Const.xmlns_stream_error())
+          |> stream_error_template()
+
         true ->
           "should not get here"
       end
@@ -95,19 +107,31 @@ defmodule Egapp.XMPP.Stream do
   end
 
   def error(:bad_namespace_prefix, attrs, state) do
-    stream_template(build_stream_attrs(attrs, state), bad_namespace_prefix_error())
+    error =
+      bad_namespace_prefix_error(Const.xmlns_stream_error())
+      |> stream_error_template()
+
+    stream_template(build_stream_attrs(attrs, state), error)
     |> :xmerl.export_simple_element(:xmerl_xml)
     |> prepend_xml_decl()
   end
 
   def error(:bad_format, attrs, state) do
-    stream_template(build_stream_attrs(attrs, state), bad_format_error())
+    error =
+      bad_format_error(Const.xmlns_stream_error())
+      |> stream_error_template()
+
+    stream_template(build_stream_attrs(attrs, state), error)
     |> :xmerl.export_simple_element(:xmerl_xml)
     |> prepend_xml_decl()
   end
 
   def error(:not_well_formed, attrs, state) do
-    stream_template(build_stream_attrs(attrs, state), not_well_formed_error())
+    error =
+      not_well_formed_error(Const.xmlns_stream_error())
+      |> stream_error_template()
+
+    stream_template(build_stream_attrs(attrs, state), error)
     |> :xmerl.export_simple_element(:xmerl_xml)
     |> prepend_xml_decl()
   end
@@ -140,9 +164,16 @@ defmodule Egapp.XMPP.Stream do
     }
   end
 
-  def auth(attrs, data, state) do
+  def auth(%{"xmlns" => Const.xmlns_sasl(), "mechanism" => mechanism}, data, state)
+      when mechanism in ["PLAIN", "DIGEST-MD5"] do
+    message =
+      case data do
+        [] -> ""
+        [xmlcdata: message] -> message
+      end
+
     result =
-      case Egapp.SASL.authenticate!(attrs["mechanism"], data) do
+      case Egapp.SASL.authenticate!(mechanism, message) do
         {:ok, user} ->
           jid = %Jid{
             localpart: user.username,
@@ -160,7 +191,7 @@ defmodule Egapp.XMPP.Stream do
           {:ok, Element.success(), state}
 
         {:error, _} ->
-          {:error, Element.failure({:"not-authorized", []}), state}
+          {:retry, Element.failure({:"not-authorized", []}), state}
 
         {:challenge, _} ->
           {:error, nil, state}
@@ -172,52 +203,73 @@ defmodule Egapp.XMPP.Stream do
     {status, resp, state}
   end
 
-  defp error_template(err) do
-    {
-      :"stream:error",
-      [],
-      [err]
-    }
+  def auth(%{"xmlns" => Const.xmlns_sasl(), "mechanism" => _}, _data, state) do
+    resp =
+      invalid_namespace_error()
+      |> auth_error_template()
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:error, resp, state}
   end
 
-  defp bad_format_error do
-    error_template({
-      :"bad-format",
-      [xmlns: Const.xmlns_stream_error()],
-      []
-    })
+  def auth(%{"mechanism" => _}, _data, state) do
+    resp =
+      invalid_mechanism_error()
+      |> auth_error_template()
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:error, resp, state}
   end
 
-  defp not_well_formed_error do
-    error_template({
-      :"not-well-formed",
-      [xmlns: Const.xmlns_stream_error()],
-      []
-    })
+  def auth(attrs, _data, state) do
+    content =
+      cond do
+        not Map.has_key?(attrs, "xmlns") ->
+          invalid_namespace_error()
+
+        not Map.has_key?(attrs, "mechanism") ->
+          invalid_mechanism_error()
+
+        true ->
+          "should not get here"
+      end
+
+    resp =
+      content
+      |> auth_error_template()
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:error, resp, state}
   end
 
-  defp invalid_namespace_error do
-    error_template({
-      :"invalid-namespace",
-      [xmlns: Const.xmlns_stream_error()],
-      []
-    })
+  defp stream_error_template(err), do: {:"stream:error", [], [err]}
+
+  defp auth_error_template(err), do: {:failure, [xmlns: Const.xmlns_sasl()], [err]}
+
+  defp bad_format_error(xmlns) do
+    {:"bad-format", [xmlns: xmlns], []}
   end
 
-  defp unsupported_version_error do
-    error_template({
-      :"unsupported-version",
-      [xmlns: Const.xmlns_stream_error()],
-      []
-    })
+  defp not_well_formed_error(xmlns) do
+    {:"not-well-formed", [xmlns: xmlns], []}
   end
 
-  defp bad_namespace_prefix_error do
-    error_template({
-      :"bad-namespace-prefix",
-      [xmlns: Const.xmlns_stream_error()],
-      []
-    })
+  defp invalid_namespace_error(xmlns \\ nil) do
+    attrs = if xmlns, do: [xmlns: xmlns], else: []
+    {:"invalid-namespace", attrs, []}
+  end
+
+  defp invalid_mechanism_error(xmlns \\ nil) do
+    attrs = if xmlns, do: [xmlns: xmlns], else: []
+    {:"invalid-mechanism", attrs, []}
+  end
+
+  defp unsupported_version_error(xmlns) do
+    {:"unsupported-version", [xmlns: xmlns], []}
+  end
+
+  defp bad_namespace_prefix_error(xmlns) do
+    {:"bad-namespace-prefix", [xmlns: xmlns], []}
   end
 
   defp prepend_xml_decl(content) do
