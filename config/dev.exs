@@ -1,7 +1,9 @@
 import Config
 
 config :logger,
-  backends: [:console]
+  backends: [:console],
+  handle_otp_reports: true,
+  handle_sasl_reports: true
 
 config :egapp, Egapp.Repo,
   database: "egapp",

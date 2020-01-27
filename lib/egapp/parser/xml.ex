@@ -1,13 +1,10 @@
 defmodule Egapp.Parser.XML do
-  alias Egapp.Parser.XML.EventMan
-  alias Egapp.Parser.XML.FSM
-
   @behaviour GenServer
 
   @impl true
   def init(conn) do
-    {:ok, event_man} = GenServer.start_link(EventMan, to: conn, mod: Egapp.Server)
-    {:ok, fsm} = :gen_fsm.start_link(FSM, [event_man: event_man], [])
+    {:ok, event_man} = :gen_statem.start_link(Egapp.XMPP.FSM, [to: conn, mod: Egapp.Server], [])
+    {:ok, fsm} = :gen_fsm.start_link(Egapp.Parser.XML.FSM, [event_man: event_man], [])
     Process.monitor(fsm)
     stream = :fxml_stream.new(fsm, :infinity, [])
     {:ok, %{fsm: fsm, event_man: event_man, stream: stream, conn: conn}}
