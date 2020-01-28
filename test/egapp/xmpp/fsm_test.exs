@@ -148,4 +148,27 @@ defmodule Egapp.XMPP.FSMTest do
     resp = IO.chardata_to_string(resp)
     assert resp =~ "foo"
   end
+
+  test "bind works correctly" do
+    child_spec = %{
+      id: :temp_fsm,
+      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
+    }
+    attrs = %{"type" => "set"}
+    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind], []}]
+    fsm = start_supervised!(child_spec)
+    :sys.replace_state(fsm, fn {state, data} ->
+      jid = %Egapp.XMPP.Jid{
+        localpart: "foo",
+        domainpart: "bar",
+        resourcepart: "123"
+      }
+      {state, put_in(data, [:client, :jid], jid)}
+    end)
+    assert :continue = :gen_statem.call(fsm, {"iq", attrs, data})
+    assert_received resp
+    resp = IO.chardata_to_string(resp)
+    assert resp =~ "<bind"
+    assert resp =~ "<jid"
+  end
 end

@@ -132,7 +132,7 @@ defmodule Egapp.XMPP.StreamTest do
 
   test "manually creating errors", %{state: state} do
     resp =
-      Stream.error(:bad_namespace_prefix, %{}, state)
+      Stream.error(:bad_namespace_prefix, %{}, state, stream_header: true)
       |> IO.chardata_to_string()
 
     assert resp =~ ~s(<?xml version="1.0"?>)
