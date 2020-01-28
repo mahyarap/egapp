@@ -109,7 +109,7 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   def xml_stream_element({:xmlstreamend, _tag_name}, state) do
-    :gen_statem.call(state.event_man, {"end"})
+    :gen_statem.call(state.event_man, :end)
     {:stop, :normal, state}
   end
 

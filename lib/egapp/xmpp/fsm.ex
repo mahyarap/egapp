@@ -60,6 +60,11 @@ defmodule Egapp.XMPP.FSM do
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
+  def stream_init({:call, from}, :end, state) do
+    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    {:stop_and_reply, :normal, {:reply, from, :stop}}
+  end
+
   def auth({:call, from}, {"auth", attrs, data}, state) do
     {next_state, action, resp, state} =
       case Stream.auth(attrs, data, state) do
@@ -77,6 +82,11 @@ defmodule Egapp.XMPP.FSM do
     end
   end
 
+  def auth({:call, from}, :end, state) do
+    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    {:stop_and_reply, :normal, {:reply, from, :stop}}
+  end
+
   def bind({:call, from}, {"iq", attrs, [{:xmlel, "bind", child_attrs, child_data}]}, state) do
     child_node = {"bind", to_map(child_attrs), child_data}
     {status, resp} = Stanza.iq(attrs, child_node, state)
@@ -92,6 +102,11 @@ defmodule Egapp.XMPP.FSM do
     resp = Stream.error(:not_authorized, attrs, state)
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
+  end
+
+  def bind({:call, from}, :end, state) do
+    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
   def stanza({:call, from}, {"iq", attrs, data}, state) do
@@ -127,6 +142,11 @@ defmodule Egapp.XMPP.FSM do
     {:ok, {to, resp}} = Stanza.message(attrs, children, state)
     apply(state.mod, :send, [to, resp])
     {:next_state, :stanza, state, {:reply, from, :continue}}
+  end
+
+  def stanza({:call, from}, :end, state) do
+    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
   defp to_map(attrs) do

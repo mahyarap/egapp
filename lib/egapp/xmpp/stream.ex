@@ -254,6 +254,8 @@ defmodule Egapp.XMPP.Stream do
     {:error, resp, state}
   end
 
+  def stream_end, do: ['<stream:stream/>']
+
   defp stream_error_template(err), do: {:"stream:error", [], [err]}
 
   defp auth_error_template(err), do: {:failure, [xmlns: Const.xmlns_sasl()], [err]}
