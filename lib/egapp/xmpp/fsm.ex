@@ -1,7 +1,4 @@
 defmodule Egapp.XMPP.FSM do
-  require Logger
-  require Ecto.Query
-
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Stanza
 
@@ -82,7 +79,7 @@ defmodule Egapp.XMPP.FSM do
 
   def bind({:call, from}, {"iq", attrs, [{:xmlel, "bind", child_attrs, child_data}]}, state) do
     child_node = {"bind", to_map(child_attrs), child_data}
-    {status, resp} = Egapp.XMPP.Stanza.iq(attrs, child_node, state)
+    {status, resp} = Stanza.iq(attrs, child_node, state)
     apply(state.mod, :send, [state.to, resp])
 
     case status do
@@ -104,7 +101,7 @@ defmodule Egapp.XMPP.FSM do
           {tag_name, to_map(child_attrs), child_data}
       end
 
-    {status, resp} = Egapp.XMPP.Stanza.iq(attrs, child_node, state)
+    {status, resp} = Stanza.iq(attrs, child_node, state)
     apply(state.mod, :send, [state.to, resp])
 
     case status do
@@ -127,7 +124,7 @@ defmodule Egapp.XMPP.FSM do
         {tag_name, to_map(attrs), data}
       end)
 
-    {:ok, {to, resp}} = Egapp.XMPP.Stanza.message(attrs, children, state)
+    {:ok, {to, resp}} = Stanza.message(attrs, children, state)
     apply(state.mod, :send, [to, resp])
     {:next_state, :stanza, state, {:reply, from, :continue}}
   end
