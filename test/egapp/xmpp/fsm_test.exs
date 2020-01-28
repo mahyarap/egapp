@@ -171,4 +171,34 @@ defmodule Egapp.XMPP.FSMTest do
     assert resp =~ "<bind"
     assert resp =~ "<jid"
   end
+
+  test "bind fails with invalid iq type" do
+    child_spec = %{
+      id: :temp_fsm,
+      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
+    }
+    attrs = %{"type" => "foo"}
+    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind], []}]
+    fsm = start_supervised!(child_spec)
+    assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
+    assert_received resp
+    resp = IO.chardata_to_string(resp)
+    assert resp =~ "<stream:error"
+    assert resp =~ "<invalid-xml"
+  end
+
+  test "bind fails with invalid tag" do
+    child_spec = %{
+      id: :temp_fsm,
+      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
+    }
+    attrs = %{"type" => "set"}
+    data = [{:xmlel, "foo", [xmlns: Const.xmlns_bind], []}]
+    fsm = start_supervised!(child_spec)
+    assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
+    assert_received resp
+    resp = IO.chardata_to_string(resp)
+    assert resp =~ "<stream:error"
+    assert resp =~ "<not-authorized"
+  end
 end
