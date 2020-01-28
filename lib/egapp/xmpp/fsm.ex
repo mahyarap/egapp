@@ -58,7 +58,7 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def stream_init({:call, from}, {_tag_name, attrs}, state) do
-    resp = Stream.error(:not_well_formed, attrs, state)
+    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
@@ -80,26 +80,21 @@ defmodule Egapp.XMPP.FSM do
     end
   end
 
-  def bind({:call, from}, {"iq", attrs, data}, state) do
-    child_node =
-      case data do
-        [{:xmlel, tag_name, child_attrs, child_data}] ->
-          {tag_name, to_map(child_attrs), child_data}
-      end
+  def bind({:call, from}, {"iq", attrs, [{:xmlel, "bind", child_attrs, child_data}]}, state) do
+    child_node = {"bind", to_map(child_attrs), child_data}
+    {status, resp} = Egapp.XMPP.Stanza.iq(attrs, child_node, state)
+    apply(state.mod, :send, [state.to, resp])
 
-    case child_node do
-      {"bind", _child_attrs, _child_data} ->
-        {status, resp} = Egapp.XMPP.Stanza.iq(attrs, child_node, state)
-        apply(state.mod, :send, [state.to, resp])
-
-        case status do
-          :ok -> {:next_state, :stanza, state, {:reply, from, :continue}}
-          :error -> {:stop, :normal, state, {:reply, from, :stop}}
-        end
-
-      _ ->
-        raise "folan"
+    case status do
+      :ok -> {:next_state, :stanza, state, {:reply, from, :continue}}
+      :error -> {:stop, :normal, state, {:reply, from, :stop}}
     end
+  end
+
+  def bind({:call, from}, {_tag_name, attrs, _data}, state) do
+    resp = Stream.error(:not_authorized, attrs, state, stream_header: true)
+    apply(state.mod, :send, [state.to, resp])
+    {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
   def stanza({:call, from}, {"iq", attrs, data}, state) do

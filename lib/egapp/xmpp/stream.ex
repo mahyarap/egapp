@@ -106,34 +106,41 @@ defmodule Egapp.XMPP.Stream do
     {:error, resp}
   end
 
-  def error(:bad_namespace_prefix, attrs, state) do
+  def error(type, attrs, state, opts \\ []) do
     error =
-      bad_namespace_prefix_error(Const.xmlns_stream_error())
-      |> stream_error_template()
+      case type do
+        :bad_namespace_prefix ->
+          bad_namespace_prefix_error(Const.xmlns_stream_error())
+          |> stream_error_template()
 
-    stream_template(build_stream_attrs(attrs, state), error)
+        :bad_format ->
+          bad_format_error(Const.xmlns_stream_error())
+          |> stream_error_template()
+
+        :not_well_formed ->
+          not_well_formed_error(Const.xmlns_stream_error())
+          |> stream_error_template()
+
+        :not_authorized ->
+          not_authorized_error(Const.xmlns_stream_error())
+          |> stream_error_template()
+      end
+
+    stream_header = Keyword.get(opts, :stream_header)
+    content =
+      if stream_header do
+        stream_template(build_stream_attrs(attrs, state), error)
+      else
+        error
+      end
+
+    content
     |> :xmerl.export_simple_element(:xmerl_xml)
-    |> prepend_xml_decl()
+    |> dee(stream_header, &prepend_xml_decl(&1))
   end
 
-  def error(:bad_format, attrs, state) do
-    error =
-      bad_format_error(Const.xmlns_stream_error())
-      |> stream_error_template()
-
-    stream_template(build_stream_attrs(attrs, state), error)
-    |> :xmerl.export_simple_element(:xmerl_xml)
-    |> prepend_xml_decl()
-  end
-
-  def error(:not_well_formed, attrs, state) do
-    error =
-      not_well_formed_error(Const.xmlns_stream_error())
-      |> stream_error_template()
-
-    stream_template(build_stream_attrs(attrs, state), error)
-    |> :xmerl.export_simple_element(:xmerl_xml)
-    |> prepend_xml_decl()
+  def dee(input, condition, func) do
+    if condition, do: func.(input), else: input
   end
 
   defp build_stream_attrs(attrs, state) do
@@ -252,6 +259,10 @@ defmodule Egapp.XMPP.Stream do
 
   defp not_well_formed_error(xmlns) do
     {:"not-well-formed", [xmlns: xmlns], []}
+  end
+
+  defp not_authorized_error(xmlns) do
+    {:"not-authorized", [xmlns: xmlns], []}
   end
 
   defp invalid_namespace_error(xmlns \\ nil) do
