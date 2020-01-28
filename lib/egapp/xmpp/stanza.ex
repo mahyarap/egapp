@@ -64,6 +64,11 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, resp}
   end
 
+  def iq(%{"type" => _} = attrs, _data, state) do
+    resp = Egapp.XMPP.Stream.error(:invalid_xml, attrs, state)
+    {:error, resp}
+  end
+
   defp iq_template(%{id: id, type: type, from: from}, content) do
     iq_attrs = [
       id: id,

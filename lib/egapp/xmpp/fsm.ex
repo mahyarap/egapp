@@ -87,12 +87,12 @@ defmodule Egapp.XMPP.FSM do
 
     case status do
       :ok -> {:next_state, :stanza, state, {:reply, from, :continue}}
-      :error -> {:stop, :normal, state, {:reply, from, :stop}}
+      :error -> {:stop_and_reply, :normal, {:reply, from, :stop}, state}
     end
   end
 
   def bind({:call, from}, {_tag_name, attrs, _data}, state) do
-    resp = Stream.error(:not_authorized, attrs, state, stream_header: true)
+    resp = Stream.error(:not_authorized, attrs, state)
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end

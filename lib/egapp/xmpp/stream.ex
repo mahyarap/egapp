@@ -124,6 +124,10 @@ defmodule Egapp.XMPP.Stream do
         :not_authorized ->
           not_authorized_error(Const.xmlns_stream_error())
           |> stream_error_template()
+
+        :invalid_xml ->
+          invalid_xml_error(Const.xmlns_stream_error())
+          |> stream_error_template()
       end
 
     stream_header = Keyword.get(opts, :stream_header)
@@ -268,6 +272,11 @@ defmodule Egapp.XMPP.Stream do
   defp invalid_namespace_error(xmlns \\ nil) do
     attrs = if xmlns, do: [xmlns: xmlns], else: []
     {:"invalid-namespace", attrs, []}
+  end
+
+  defp invalid_xml_error(xmlns) do
+    attrs = if xmlns, do: [xmlns: xmlns], else: []
+    {:"invalid-xml", attrs, []}
   end
 
   defp invalid_mechanism_error(xmlns \\ nil) do
