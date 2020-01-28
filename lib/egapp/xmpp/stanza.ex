@@ -108,15 +108,15 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   defp do_message("active", _attrs, _data) do
-    {:active, [xmlns: Const.xmlns_chatstates], []}
+    {:active, [xmlns: Const.xmlns_chatstates()], []}
   end
 
   defp do_message("composing", _attrs, _data) do
-    {:composing, [xmlns: Const.xmlns_chatstates], []}
+    {:composing, [xmlns: Const.xmlns_chatstates()], []}
   end
 
   defp do_message("paused", _attrs, _data) do
-    {:paused, [xmlns: Const.xmlns_chatstates], []}
+    {:paused, [xmlns: Const.xmlns_chatstates()], []}
   end
 
   defp do_message("body", _attrs, data) do

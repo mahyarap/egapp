@@ -134,13 +134,16 @@ defmodule Egapp.XMPP.FSMTest do
       id: :temp_fsm,
       start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :auth], []]}
     }
+
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
     fsm = start_supervised!(child_spec)
     Ecto.Adapters.SQL.Sandbox.allow(Egapp.Repo, self(), fsm)
+
     attrs = %{
       "xmlns" => Const.xmlns_sasl(),
       "mechanism" => "PLAIN"
     }
+
     Egapp.Repo.insert!(%Egapp.Repo.User{username: "foo", password: "bar"})
 
     assert :continue = :gen_statem.call(fsm, {"auth", attrs, []})
@@ -154,17 +157,21 @@ defmodule Egapp.XMPP.FSMTest do
       id: :temp_fsm,
       start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
     }
+
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind], []}]
+    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind()], []}]
     fsm = start_supervised!(child_spec)
+
     :sys.replace_state(fsm, fn {state, data} ->
       jid = %Egapp.XMPP.Jid{
         localpart: "foo",
         domainpart: "bar",
         resourcepart: "123"
       }
+
       {state, put_in(data, [:client, :jid], jid)}
     end)
+
     assert :continue = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
     resp = IO.chardata_to_string(resp)
@@ -177,8 +184,9 @@ defmodule Egapp.XMPP.FSMTest do
       id: :temp_fsm,
       start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
     }
+
     attrs = %{"type" => "foo"}
-    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind], []}]
+    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind()], []}]
     fsm = start_supervised!(child_spec)
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -192,8 +200,9 @@ defmodule Egapp.XMPP.FSMTest do
       id: :temp_fsm,
       start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
     }
+
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "foo", [xmlns: Const.xmlns_bind], []}]
+    data = [{:xmlel, "foo", [xmlns: Const.xmlns_bind()], []}]
     fsm = start_supervised!(child_spec)
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -207,6 +216,7 @@ defmodule Egapp.XMPP.FSMTest do
       id: :temp_fsm,
       start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
     }
+
     attrs = %{"type" => "set"}
     data = [{:xmlel, "bind", [xmlns: "foo"], []}]
     fsm = start_supervised!(child_spec)

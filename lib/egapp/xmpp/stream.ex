@@ -131,6 +131,7 @@ defmodule Egapp.XMPP.Stream do
       end
 
     stream_header = Keyword.get(opts, :stream_header)
+
     content =
       if stream_header do
         stream_template(build_stream_attrs(attrs, state), error)

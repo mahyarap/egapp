@@ -145,7 +145,8 @@ defmodule Egapp.Parser.XML.EventMan do
         {8, "duplicate attribute"} ->
           Stream.error(:not_well_formed, %{}, state)
 
-        _ -> raise "should not get here"
+        _ ->
+          raise "should not get here"
       end
 
     apply(state.mod, :send, [state.to, resp])
