@@ -152,25 +152,19 @@ defmodule Egapp.XMPP.FSMTest do
     assert resp =~ "foo"
   end
 
-  test "bind works correctly" do
-    child_spec = %{
-      id: :temp_fsm,
-      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
-    }
-
-    attrs = %{"type" => "set"}
-    data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
-    fsm = start_supervised!(child_spec)
-
-    :sys.replace_state(fsm, fn {state, data} ->
+  test "bind works correctly", %{fsm: fsm} do
+    :sys.replace_state(fsm, fn {_state, data} ->
       jid = %Egapp.XMPP.Jid{
         localpart: "foo",
         domainpart: "bar",
         resourcepart: "123"
       }
 
-      {state, put_in(data, [:client, :jid], jid)}
+      {:bind, put_in(data, [:client, :jid], jid)}
     end)
+
+    attrs = %{"type" => "set"}
+    data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
 
     assert :continue = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -179,15 +173,11 @@ defmodule Egapp.XMPP.FSMTest do
     assert resp =~ "<jid"
   end
 
-  test "bind fails with invalid iq type" do
-    child_spec = %{
-      id: :temp_fsm,
-      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
-    }
-
+  test "bind fails with invalid iq type", %{fsm: fsm} do
+    :sys.replace_state(fsm, fn {_state, data} -> {:bind, data} end)
     attrs = %{"type" => "foo"}
     data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
-    fsm = start_supervised!(child_spec)
+
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
     resp = IO.chardata_to_string(resp)
@@ -195,15 +185,11 @@ defmodule Egapp.XMPP.FSMTest do
     assert resp =~ "<invalid-xml"
   end
 
-  test "bind fails with invalid tag" do
-    child_spec = %{
-      id: :temp_fsm,
-      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
-    }
-
+  test "bind fails with invalid tag", %{fsm: fsm} do
+    :sys.replace_state(fsm, fn {_state, data} -> {:bind, data} end)
     attrs = %{"type" => "set"}
     data = [{:xmlel, "foo", [{"xmlns", Const.xmlns_bind()}], []}]
-    fsm = start_supervised!(child_spec)
+
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
     resp = IO.chardata_to_string(resp)
@@ -211,15 +197,11 @@ defmodule Egapp.XMPP.FSMTest do
     assert resp =~ "<not-authorized"
   end
 
-  test "bind fails with invalid bind attr" do
-    child_spec = %{
-      id: :temp_fsm,
-      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self(), init_state: :bind], []]}
-    }
-
+  test "bind fails with invalid bind attr", %{fsm: fsm} do
+    :sys.replace_state(fsm, fn {_state, data} -> {:bind, data} end)
     attrs = %{"type" => "set"}
     data = [{:xmlel, "bind", [{"xmlns", "foo"}], []}]
-    fsm = start_supervised!(child_spec)
+
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
     resp = IO.chardata_to_string(resp)
