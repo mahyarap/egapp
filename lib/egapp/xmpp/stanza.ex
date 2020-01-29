@@ -90,8 +90,12 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def message(%{"type" => "chat"} = attrs, children, state) do
-    to = JidConnRegistry.get(Jid.bare_jid(state.client.jid))
+  def message(%{"type" => "chat", "to" => to} = attrs, children, state) do
+    to_conn =
+      to
+      |> Jid.parse()
+      |> Jid.bare_jid()
+      |> JidConnRegistry.get()
     attrs = Map.put(attrs, "from", Jid.full_jid(state.client.jid))
 
     content =
@@ -104,7 +108,7 @@ defmodule Egapp.XMPP.Stanza do
       message_template(build_message_attrs(attrs, state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    {:ok, {to, resp}}
+    {:ok, {to_conn, resp}}
   end
 
   defp do_message("active", _attrs, _data) do
