@@ -159,7 +159,7 @@ defmodule Egapp.XMPP.FSMTest do
     }
 
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind()], []}]
+    data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
     fsm = start_supervised!(child_spec)
 
     :sys.replace_state(fsm, fn {state, data} ->
@@ -186,7 +186,7 @@ defmodule Egapp.XMPP.FSMTest do
     }
 
     attrs = %{"type" => "foo"}
-    data = [{:xmlel, "bind", [xmlns: Const.xmlns_bind()], []}]
+    data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
     fsm = start_supervised!(child_spec)
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -202,7 +202,7 @@ defmodule Egapp.XMPP.FSMTest do
     }
 
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "foo", [xmlns: Const.xmlns_bind()], []}]
+    data = [{:xmlel, "foo", [{"xmlns", Const.xmlns_bind()}], []}]
     fsm = start_supervised!(child_spec)
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -218,12 +218,12 @@ defmodule Egapp.XMPP.FSMTest do
     }
 
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "bind", [xmlns: "foo"], []}]
+    data = [{:xmlel, "bind", [{"xmlns", "foo"}], []}]
     fsm = start_supervised!(child_spec)
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<stream:error"
-    assert resp =~ "<not-authorized"
+    assert resp =~ "<invalid-xml"
   end
 end

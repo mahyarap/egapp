@@ -13,6 +13,7 @@ defmodule Egapp.XMPP.Jid do
 
   def parse(str) do
     result = Regex.named_captures(@jid_re, str)
+
     %Egapp.XMPP.Jid{
       localpart: result["localpart"],
       domainpart: result["domainpart"],

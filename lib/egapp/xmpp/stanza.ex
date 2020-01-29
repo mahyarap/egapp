@@ -46,7 +46,11 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => "set"} = attrs, {"bind", child_attrs, child_data}, state) do
+  def iq(
+        %{"type" => "set"} = attrs,
+        {"bind", %{"xmlns" => Const.xmlns_bind()} = child_attrs, child_data},
+        state
+      ) do
     content = Element.bind(child_attrs, child_data, state)
 
     resp =
@@ -64,7 +68,7 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => _} = attrs, _data, state) do
+  def iq(%{"type" => _type} = attrs, _data, state) do
     resp = Egapp.XMPP.Stream.error(:invalid_xml, attrs, state)
     {:error, resp}
   end
@@ -96,6 +100,7 @@ defmodule Egapp.XMPP.Stanza do
       |> Jid.parse()
       |> Jid.bare_jid()
       |> JidConnRegistry.get()
+
     attrs = Map.put(attrs, "from", Jid.full_jid(state.client.jid))
 
     content =
