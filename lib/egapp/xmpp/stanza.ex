@@ -8,6 +8,8 @@ defmodule Egapp.XMPP.Stanza do
   alias Egapp.JidConnRegistry
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
+    # Inject the `to` attr to be used by some queries
+    child_attrs = Map.put(child_attrs, "to", Map.get(attrs, "to"))
     content = Element.query(child_attrs, child_data, state)
 
     resp =

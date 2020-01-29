@@ -92,22 +92,22 @@ defmodule Egapp.XMPP.Element do
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, _state) do
-    query_template([xmlns: Const.xmlns_disco_items()], [])
-  end
-
-  def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, _state) do
     query_template(
-      [xmlns: Const.xmlns_disco_info()],
+      [xmlns: Const.xmlns_disco_items()],
       [
-        {:identity, [category: 'server', type: 'im'], []},
-        {:feature, [var: Const.xmlns_disco_info()], []},
-        {:feature, [var: Const.xmlns_disco_items()], []},
-        {:feature, [var: Const.xmlns_ping()], []},
-        {:feature, [var: Const.xmlns_vcard()], []},
-        {:feature, [var: Const.xmlns_version()], []},
-        {:feature, [var: Const.xmlns_last()], []}
+        {:item, [jid: "conference.egapp.im"], []}
       ]
     )
+  end
+
+  def query(%{"xmlns" => Const.xmlns_disco_info(), "to" => to}, _data, state) do
+    content =
+      state.cats
+      |> Enum.filter(fn cat -> cat.address() == to end)
+      |> Enum.map(fn cat -> [cat.identity() | cat.features()] end)
+      |> hd()
+
+    query_template([xmlns: Const.xmlns_disco_info()], content)
   end
 
   def query(%{"xmlns" => Const.xmlns_roster()}, _data, state) do
@@ -196,4 +196,8 @@ defmodule Egapp.XMPP.Element do
       ]
     }
   end
+
+  def feature(xmlns), do: {:feature, [var: xmlns], []}
+
+  def identity(category, type), do: {:identity, [category: category, type: type], []}
 end

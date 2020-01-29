@@ -49,6 +49,7 @@ defmodule Egapp.Constants do
   const xmlns_disco_info,   "http://jabber.org/protocol/disco#info"
   const xmlns_disco_items,  "http://jabber.org/protocol/disco#items"
   const xmlns_last,         "jabber:iq:last"
+  const xmlns_muc,          "http://jabber.org/protocol/muc"
   const xmlns_ping,         "urn:xmpp:ping"
   const xmlns_roster,       "jabber:iq:roster"
   const xmlns_sasl,         "urn:ietf:params:xml:ns:xmpp-sasl"

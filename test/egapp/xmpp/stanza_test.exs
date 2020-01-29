@@ -73,9 +73,10 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
   end
 
-  test "returns correct disco info", %{state: state} do
-    attrs = %{"type" => "get", "id" => state.id}
+  test "returns correct disco info for server category", %{state: state} do
+    attrs = %{"type" => "get", "id" => state.id, "to" => "egapp.im"}
     child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
+    state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
@@ -94,6 +95,27 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
     assert resp =~ ~s(feature var="#{Const.xmlns_version()}")
     assert resp =~ ~s(feature var="#{Const.xmlns_last()}")
+  end
+
+  test "returns correct disco info for conference category", %{state: state} do
+    attrs = %{"type" => "get", "id" => state.id, "to" => "conference.egapp.im"}
+    child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
+    state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
+    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<iq)
+    assert resp =~ ~s(from="conference.egapp.im")
+    assert resp =~ state.id
+    assert resp =~ ~s(type="result")
+    assert resp =~ ~s(query)
+    assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
+    assert resp =~ ~s(<identity)
+    assert resp =~ ~s(type="text")
+    assert resp =~ ~s(category="conference")
+    assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
+    assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
   end
 
   test "returns correct vcard", %{state: state} do
