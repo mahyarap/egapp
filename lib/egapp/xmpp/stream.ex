@@ -46,7 +46,7 @@ defmodule Egapp.XMPP.Stream do
 
   RFC6120 4.8.1
   """
-  def stream(%{"xmlns:stream" => _, "version" => Const.xmpp_version()} = attrs, state) do
+  def stream(%{"xmlns:stream" => val} = attrs, state) when val != Const.xmlns_stream() do
     error =
       invalid_namespace_error(Const.xmlns_stream_error())
       |> stream_error_template()
@@ -64,7 +64,7 @@ defmodule Egapp.XMPP.Stream do
 
   RFC6120 4.7.5
   """
-  def stream(%{"xmlns:stream" => _, "version" => _} = attrs, state) do
+  def stream(%{"version" => val} = attrs, state) when val != Const.xmpp_version() do
     error =
       unsupported_version_error(Const.xmlns_stream_error())
       |> stream_error_template()
@@ -78,25 +78,32 @@ defmodule Egapp.XMPP.Stream do
   end
 
   @doc """
-  Returns other stream error cases
+  Returns "invalid-namespace" if the stream header is missing
 
-  RFC6120 4.7.5
   RFC6120 4.8.1
   """
-  def stream(attrs, state) do
+  def stream(attrs, state) when not is_map_key(attrs, "xmlns:stream") do
     content =
-      cond do
-        not Map.has_key?(attrs, "xmlns:stream") ->
-          bad_namespace_prefix_error(Const.xmlns_stream_error())
-          |> stream_error_template()
+      bad_namespace_prefix_error(Const.xmlns_stream_error())
+      |> stream_error_template()
 
-        not Map.has_key?(attrs, "version") ->
-          unsupported_version_error(Const.xmlns_stream_error())
-          |> stream_error_template()
+    resp =
+      stream_template(build_stream_attrs(attrs, state), content)
+      |> :xmerl.export_simple_element(:xmerl_xml)
+      |> prepend_xml_decl()
 
-        true ->
-          "should not get here"
-      end
+    {:error, resp}
+  end
+
+  @doc """
+  Returns "unsupported-version" if the version is missing
+
+  RFC6120 4.7.5
+  """
+  def stream(attrs, state) when not is_map_key(attrs, "version") do
+    content =
+      unsupported_version_error(Const.xmlns_stream_error())
+      |> stream_error_template()
 
     resp =
       stream_template(build_stream_attrs(attrs, state), content)
