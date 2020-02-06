@@ -153,7 +153,10 @@ defmodule Egapp.XMPP.Stanza do
     {:message, iq_attrs, data}
   end
 
-  def presence(_attrs, _child, state) do
+  @doc """
+  Initial presence without `to`.
+  """
+  def presence(attrs, _child, state) when not is_map_key(attrs, "to") do
     roster =
       Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
       |> Egapp.Repo.one()
