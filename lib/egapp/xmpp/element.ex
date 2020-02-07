@@ -1,6 +1,8 @@
 defmodule Egapp.XMPP.Element do
   require Ecto.Query
   require Egapp.Constants, as: Const
+
+  alias Egapp.Config
   alias Egapp.XMPP.Jid
 
   @doc """
@@ -115,10 +117,16 @@ defmodule Egapp.XMPP.Element do
       |> Egapp.Repo.preload(:users)
 
     items =
-      Enum.map(roster.users, fn user ->
+      roster.users
+      |> Enum.map(fn user ->
+        jid = %Jid{
+          localpart: user.username,
+          domainpart: Config.get(:domain_name)
+        }
+
         {
           :item,
-          [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'],
+          [jid: Jid.bare_jid(jid), subscription: 'both'],
           []
         }
       end)

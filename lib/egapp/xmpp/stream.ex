@@ -1,6 +1,8 @@
 defmodule Egapp.XMPP.Stream do
   require Egapp.Constants, as: Const
+
   alias Egapp.Utils
+  alias Egapp.Config
   alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
@@ -165,7 +167,7 @@ defmodule Egapp.XMPP.Stream do
 
   defp stream_template(%{id: id, lang: lang, from: from}, content) do
     stream_attrs = [
-      from: 'egapp.im',
+      from: Config.get(:domain_name),
       id: id,
       version: '1.0',
       "xml:lang": lang,
@@ -196,7 +198,7 @@ defmodule Egapp.XMPP.Stream do
         {:ok, user} ->
           jid = %Jid{
             localpart: user.username,
-            domainpart: "egapp.im",
+            domainpart: Config.get(:domain_name),
             resourcepart: Utils.generate_id() |> Integer.to_string()
           }
 

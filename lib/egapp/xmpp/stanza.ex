@@ -2,6 +2,7 @@ defmodule Egapp.XMPP.Stanza do
   require Ecto.Query
   require Egapp.Constants, as: Const
 
+  alias Egapp.Config
   alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
@@ -89,7 +90,7 @@ defmodule Egapp.XMPP.Stanza do
     %{
       lang: Map.get(state.client, "xml:lang", "en"),
       id: Map.get(attrs, "id"),
-      from: Map.get(attrs, "from") || "egapp.im",
+      from: Map.get(attrs, "from") || Config.get(:domain_name),
       type: type
     }
   end
@@ -176,7 +177,7 @@ defmodule Egapp.XMPP.Stanza do
     |> Enum.map(fn contact ->
       pattern = %Jid{
         localpart: contact.username,
-        domainpart: "egapp.im",
+        domainpart: Config.get(:domain_name),
         resourcepart: :_
       }
 
@@ -205,7 +206,7 @@ defmodule Egapp.XMPP.Stanza do
     |> Enum.map(fn contact ->
       pattern = %Jid{
         localpart: contact.username,
-        domainpart: "egapp.im",
+        domainpart: Config.get(:domain_name),
         resourcepart: :_
       }
 
