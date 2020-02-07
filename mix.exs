@@ -32,7 +32,7 @@ defmodule Egapp.MixProject do
 
   defp aliases do
     [
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test --no-start"]
     ]
   end
 end

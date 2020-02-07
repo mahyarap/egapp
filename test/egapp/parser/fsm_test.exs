@@ -4,6 +4,11 @@ defmodule Egapp.Parser.FSMTest do
   alias Egapp.Parser.XML.FSM
   alias Egapp.Parser.XML.EventMan
 
+  setup_all do
+    Application.ensure_all_started(:fast_xml)
+    :ok
+  end
+
   setup do
     event_man = start_supervised!({EventMan, to: self(), mod: Kernel})
     {:ok, event_man: event_man}

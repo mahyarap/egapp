@@ -9,7 +9,7 @@ config :egapp, Egapp.Repo,
 
 config :egapp,
   ecto_repos: [Egapp.Repo],
-  address: "0.0.0.0",
+  address: "127.0.0.1",
   port: 0,
   domain_name: "egapp.im"
 
