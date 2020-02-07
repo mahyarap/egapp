@@ -206,7 +206,7 @@ defmodule Egapp.XMPP.Stream do
             |> put_in([:client, :id], user.id)
             |> put_in([:client, :jid], jid)
 
-          JidConnRegistry.put(Jid.bare_jid(jid), state.to)
+          JidConnRegistry.put(jid, state.to)
           {:ok, Element.success(), state}
 
         {:error, _} ->
