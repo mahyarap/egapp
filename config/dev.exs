@@ -12,4 +12,6 @@ config :egapp, Egapp.Repo,
   hostname: "localhost"
 
 config :egapp,
-  listen: 5222
+  address: "0.0.0.0",
+  port: 5222,
+  domain_name: "egapp.im"

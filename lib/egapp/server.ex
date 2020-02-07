@@ -1,4 +1,6 @@
 defmodule Egapp.Server do
+  alias Egapp.Config
+
   def child_spec(args) do
     %{
       id: __MODULE__,
@@ -14,7 +16,7 @@ defmodule Egapp.Server do
   end
 
   def serve(args) do
-    socket = listen(Application.get_env(:egapp, :listen))
+    socket = listen(Config.get(:address), Config.get(:port))
     loop(socket, args)
   end
 
@@ -46,7 +48,12 @@ defmodule Egapp.Server do
     end
   end
 
-  defp listen(port) do
+  defp listen(address, port) do
+    {:ok, address} =
+      address
+      |> String.to_charlist()
+      |> :inet.parse_address()
+
     conn_opts = [
       # Received Packet is delivered as a binary
       :binary,
@@ -59,7 +66,9 @@ defmodule Egapp.Server do
       reuseaddr: true,
       # See man 7 tcp (TCP_NODELAY)
       nodelay: true,
-      keepalive: true
+      keepalive: true,
+      # Address to bind to
+      ip: address,
     ]
 
     {:ok, socket} = :gen_tcp.listen(port, conn_opts)
