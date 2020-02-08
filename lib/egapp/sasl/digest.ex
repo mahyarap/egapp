@@ -1,5 +1,5 @@
 defmodule Egapp.SASL.Digest do
-  def authenticate(message) do
+  def authenticate(_message) do
     Egapp.XMPP.Element.challenge()
   end
 
@@ -20,10 +20,10 @@ defmodule Egapp.SASL.Digest do
     p2 = [decoded["nonce"], ':', decoded["nc"], ':', decoded["cnonce"], ':', decoded["qop"]]
     p3 = md5_hex(a2)
 
-    response_value = md5_hex([p1, ':', p2, ':', p3])
+    _response_value = md5_hex([p1, ':', p2, ':', p3])
     # Check response_value == decoded["response"]
 
-    rspauth = md5_hex([p1, ':', p2, md5_hex(tl(a2))])
+    _rspauth = md5_hex([p1, ':', p2, md5_hex(tl(a2))])
   end
 
   defp decode_digest_response(digest_response) do
