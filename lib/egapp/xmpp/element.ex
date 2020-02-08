@@ -2,7 +2,6 @@ defmodule Egapp.XMPP.Element do
   require Ecto.Query
   require Egapp.Constants, as: Const
 
-  alias Egapp.Config
   alias Egapp.XMPP.Jid
 
   @doc """
@@ -19,22 +18,12 @@ defmodule Egapp.XMPP.Element do
   RFC6120 7.4
   RFC6120 7.6.1
   """
-  def bind(_attrs, _data, state) do
-    full_jid = Jid.full_jid(state.client.jid) |> String.to_charlist()
-
-    {
-      :bind,
-      [xmlns: Const.xmlns_bind()],
-      [{:jid, [], [full_jid]}]
-    }
+  def bind(attrs, data, state) do
+    Egapp.XMPP.Server.Element.bind(attrs, data, state)
   end
 
   def bind() do
-    {
-      :bind,
-      [xmlns: Const.xmlns_bind()],
-      []
-    }
+    Egapp.XMPP.Server.Element.bind()
   end
 
   @doc """
@@ -83,118 +72,43 @@ defmodule Egapp.XMPP.Element do
   @doc """
   RFC3921 3
   """
+  def session(attrs, data, state) do
+    Egapp.XMPP.Server.Element.session(attrs, data, state)
+  end
+
   def session do
-    {
-      :session,
-      [xmlns: Const.xmlns_session()],
-      []
-    }
+    Egapp.XMPP.Server.Element.session()
   end
 
-  def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, _state) do
-    query_template(
-      [xmlns: Const.xmlns_disco_items()],
-      [
-        {:item, [jid: "conference.egapp.im"], []}
-      ]
-    )
+  def query(%{"to" => to} = attrs, data, state) do
+    case Jid.partial_parse(to) do
+      %Jid{domainpart: "egapp.im"} ->
+        Egapp.XMPP.Server.Element.query(attrs, data, state)
+
+      %Jid{domainpart: "conference.egapp.im"} ->
+        Egapp.XMPP.Conference.Element.query(attrs, data, state)
+
+      _ ->
+        raise "should not get here"
+    end
   end
 
-  def query(%{"xmlns" => Const.xmlns_disco_info(), "to" => to}, _data, state) do
-    content =
-      state.cats
-      |> Enum.filter(fn cat -> cat.address() == to end)
-      |> Enum.map(fn cat -> [cat.identity() | cat.features()] end)
-      |> hd()
-
-    query_template([xmlns: Const.xmlns_disco_info()], content)
+  def query(attrs, data, state) do
+    Egapp.XMPP.Server.Element.query(attrs, data, state)
   end
 
-  def query(%{"xmlns" => Const.xmlns_roster()}, _data, state) do
-    roster =
-      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
-      |> Egapp.Repo.one()
-      |> Egapp.Repo.preload(:users)
+  def query_template(attrs, content), do: {:query, attrs, content}
 
-    items =
-      roster.users
-      |> Enum.map(fn user ->
-        jid = %Jid{
-          localpart: user.username,
-          domainpart: Config.get(:domain_name)
-        }
-
-        {
-          :item,
-          [jid: Jid.bare_jid(jid), subscription: 'both'],
-          []
-        }
-      end)
-
-    query_template([xmlns: Const.xmlns_roster()], items)
+  def vcard(%{"xmlns" => Const.xmlns_vcard()} = attrs, data, state) do
+    Egapp.XMPP.Server.Element.vcard(attrs, data, state)
   end
 
-  def query(%{"xmlns" => Const.xmlns_bytestreams()}, _data, _state) do
-    content = [
-      {
-        :error,
-        [type: 'cancel'],
-        [
-          {
-            :"feature-not-implemented",
-            [xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'],
-            []
-          }
-        ]
-      }
-    ]
-
-    query_template([xmlns: Const.xmlns_disco_info()], content)
+  def ping(%{"xmlns" => Const.xmlns_ping()} = attrs, data, state) do
+    Egapp.XMPP.Server.Element.ping(attrs, data, state)
   end
 
-  def query(%{"xmlns" => Const.xmlns_version()}, _data, _state) do
-    content = [
-      {:name, ['egapp']},
-      {:version, ['1.0.0']}
-    ]
-
-    query_template([xmlns: Const.xmlns_version()], content)
-  end
-
-  def query(%{"xmlns" => Const.xmlns_last()}, _data, _state) do
-    query_template([xmlns: Const.xmlns_last()], [])
-  end
-
-  defp query_template(attrs, content), do: {:query, attrs, content}
-
-  def vcard(%{"xmlns" => Const.xmlns_vcard()}, _data, _state) do
-    {
-      :vCard,
-      [xmlns: Const.xmlns_vcard()],
-      []
-    }
-  end
-
-  def ping(%{"xmlns" => Const.xmlns_ping()}, _data, _state) do
-    {
-      :ping,
-      [xmlns: Const.xmlns_ping()],
-      []
-    }
-  end
-
-  def time(%{"xmlns" => Const.xmlns_time()}, _data, _state) do
-    {:ok, now} = DateTime.now("Etc/UTC")
-    iso_time = DateTime.to_iso8601(now)
-
-    {
-      :time,
-      [xmlns: Const.xmlns_time()],
-      [
-        {:tzo, ['+00:00']},
-        {:utc, [String.to_charlist(iso_time)]}
-      ]
-    }
+  def time(%{"xmlns" => Const.xmlns_time()} = attrs, data, state) do
+    Egapp.XMPP.Server.Element.time(attrs, data, state)
   end
 
   def feature(xmlns), do: {:feature, [var: xmlns], []}

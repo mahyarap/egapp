@@ -8,10 +8,13 @@ defmodule Egapp.XMPP.Stanza do
   alias Egapp.JidConnRegistry
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
-    # Inject the `to` attr to be used by some queries
-    child_attrs = Map.put(child_attrs, "to", Map.get(attrs, "to"))
-    content = Element.query(child_attrs, child_data, state)
+    child_attrs =
+      case attrs do
+        %{"to" => to} -> Map.put(child_attrs, "to", to)
+        _ -> child_attrs
+      end
 
+    content = Element.query(child_attrs, child_data, state)
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -21,7 +24,6 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"vCard", child_attrs, child_data}, state) do
     content = Element.vcard(child_attrs, child_data, state)
-
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -31,7 +33,6 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"time", child_attrs, child_data}, state) do
     content = Element.time(child_attrs, child_data, state)
-
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -41,7 +42,6 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"ping", child_attrs, child_data}, state) do
     content = Element.ping(child_attrs, child_data, state)
-
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -49,13 +49,8 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, resp}
   end
 
-  def iq(
-        %{"type" => "set"} = attrs,
-        {"bind", %{"xmlns" => Const.xmlns_bind()} = child_attrs, child_data},
-        state
-      ) do
+  def iq(%{"type" => "set"} = attrs, {"bind", child_attrs, child_data}, state) do
     content = Element.bind(child_attrs, child_data, state)
-
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -63,9 +58,10 @@ defmodule Egapp.XMPP.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => "set"} = attrs, {"session", _child_attrs, _child_data}, state) do
+  def iq(%{"type" => "set"} = attrs, {"session", child_attrs, child_data}, state) do
+    content = Element.session(child_attrs, child_data, state)
     resp =
-      iq_template(build_iq_attrs(attrs, 'result', state), [])
+      iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
 
     {:ok, resp}
@@ -92,7 +88,7 @@ defmodule Egapp.XMPP.Stanza do
     %{
       lang: Map.get(state.client, "xml:lang", "en"),
       id: Map.get(attrs, "id"),
-      from: Map.get(attrs, "from") || Config.get(:domain_name),
+      from: Map.get(attrs, "to") || Config.get(:domain_name),
       type: type
     }
   end
