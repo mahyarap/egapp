@@ -156,8 +156,18 @@ defmodule Egapp.XMPP.Stanza do
     {:message, iq_attrs, data}
   end
 
+  def presence(%{"to" => to} = attrs, child, state) do
+    case Jid.parse(to) do
+      %Jid{domainpart: "conference.egapp.im"} ->
+        Egapp.XMPP.Conference.presence(attrs, child, state)
+
+      "egapp.im" ->
+        Egapp.XMPP.Server.presence(attrs, child, state)
+    end
+  end
+
   @doc """
-  Handles initial presence (a presence without the `to` attribute.
+  Handles initial presence (a presence without the `to` attribute).
   """
   def presence(attrs, _child, state) when not is_map_key(attrs, "to") do
     roster =
@@ -228,7 +238,7 @@ defmodule Egapp.XMPP.Stanza do
     end)
   end
 
-  defp presence_template(%{from: from, to: to}, content) do
+  def presence_template(%{from: from, to: to}, content) do
     {:presence, [from: from, to: to], content}
   end
 end
