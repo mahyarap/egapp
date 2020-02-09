@@ -15,11 +15,13 @@ defmodule Egapp.Server do
   end
 
   def start_link(args) do
-    {:ok, spawn_link(__MODULE__, :serve, [args])}
+    :proc_lib.start_link(__MODULE__, :init, [self(), args])
   end
 
-  def serve(args) do
+  def init(parent, args) do
+    Process.register(self(), __MODULE__)
     socket = listen(Config.get(:address), Config.get(:port))
+    :proc_lib.init_ack(parent, {:ok, self()})
     loop(socket, args)
   end
 
