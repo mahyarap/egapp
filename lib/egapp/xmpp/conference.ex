@@ -19,16 +19,4 @@ defmodule Egapp.XMPP.Conference do
       Element.feature(Const.xmlns_muc())
     ]
   end
-
-  def presence(_attrs, _data, state) do
-    attrs = %{
-      from: "folan@conference.egapp.im/Alice",
-      to: "mahan@egapp.im"
-    }
-    resp =
-      Egapp.XMPP.Stanza.presence_template(attrs, [])
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    [{state.to, resp}]
-  end
 end
