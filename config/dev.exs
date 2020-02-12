@@ -15,3 +15,7 @@ config :egapp,
   address: "0.0.0.0",
   port: 5222,
   domain_name: "egapp.im"
+
+config :mnesia,
+  # dir must be a charlist
+  dir: '/tmp/mnesia'

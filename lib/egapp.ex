@@ -7,6 +7,7 @@ defmodule Egapp do
   def start(_type, _args) do
     children = [
       {Egapp.Repo, []},
+      {Egapp.MucRegistry, []},
       {Egapp.JidConnRegistry, []},
       {Task.Supervisor, name: Egapp.ConnectionSupervisor},
       {Egapp.Server, parser: Egapp.Parser.XML}
