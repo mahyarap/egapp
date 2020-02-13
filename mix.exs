@@ -27,7 +27,7 @@ defmodule Egapp.MixProject do
       # {:fast_xml, git: "https://github.com/processone/fast_xml.git", tag: "1.1.37"},
       {:ecto_sql, "~> 3.2"},
       {:postgrex, ">= 0.0.0"},
-      {:credo, "~> 1.1.0", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.2.0", only: [:dev, :test], runtime: false}
     ]
   end
 
