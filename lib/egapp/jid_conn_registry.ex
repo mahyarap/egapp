@@ -1,4 +1,12 @@
 defmodule Egapp.JidConnRegistry do
+  @moduledoc """
+  A simple registry to store user's jid along its port
+
+  A GenServer is only used to own the ETS table. All the functions in this
+  module interface directly to the ETS functions. This way, we make sure
+  messages are not serialized by the GenServer.
+  """
+
   use GenServer
 
   def start_link(_) do

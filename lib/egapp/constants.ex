@@ -1,10 +1,12 @@
 defmodule Constants do
   @moduledoc """
-  An alternative to use @constant_name value approach to defined reusable 
+  An alternative to use @constant_name value approach to defined reusable
   constants in elixir. 
-  This module offers an approach to define these in a
-  module that can be shared with other modules. They are implemented with 
-  macros so they can be used in guards and matches
+
+  This module offers an approach to define these in a module that can be shared
+  with other modules. They are implemented with macros so they can be used in
+  guards and matches
+
   ## Examples: 
   Create a module to define your shared constants
       defmodule MyConstants do
@@ -12,6 +14,7 @@ defmodule Constants do
         define something,   10
         define another,     20
       end
+
   Use the constants
       defmodule MyModule do
         require MyConstants
@@ -36,6 +39,7 @@ defmodule Constants do
 end
 
 defmodule Egapp.Constants do
+  @moduledoc false
   use Constants
 
   const xmlns_bind,         "urn:ietf:params:xml:ns:xmpp-bind"

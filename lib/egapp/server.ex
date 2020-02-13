@@ -1,4 +1,7 @@
 defmodule Egapp.Server do
+  @moduledoc """
+  A special process which acts as a TCP server/client.
+  """
   alias Egapp.Config
 
   def child_spec(args) do

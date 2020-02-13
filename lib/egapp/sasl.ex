@@ -1,4 +1,7 @@
 defmodule Egapp.SASL do
+  @moduledoc """
+  A SASL behaviour
+  """
   @callback authenticate(any()) :: any()
 
   def authenticate!(mechanism, message) do

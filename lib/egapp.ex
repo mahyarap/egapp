@@ -1,4 +1,7 @@
 defmodule Egapp do
+  @moduledoc """
+  The entry point for Egapp.
+  """
   use Application
 
   def start(_type, _args) do
