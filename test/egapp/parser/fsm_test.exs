@@ -10,12 +10,12 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   setup do
-    event_man = start_supervised!({EventMan, to: self(), mod: Kernel})
-    {:ok, event_man: event_man}
+    xmpp_fsm = start_supervised!({EventMan, to: self(), mod: Kernel})
+    {:ok, xmpp_fsm: xmpp_fsm}
   end
 
-  test "can transition to initial state", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "can transition to initial state", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <?xml version="1.0"?>
@@ -36,8 +36,8 @@ defmodule Egapp.Parser.FSMTest do
     assert not Enum.empty?(resp)
   end
 
-  test "stream with syntax error", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "stream with syntax error", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = "syntax error"
 
@@ -51,8 +51,8 @@ defmodule Egapp.Parser.FSMTest do
     assert resp =~ "<bad-format"
   end
 
-  test "not well formed stream", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "not well formed stream", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <?>
@@ -68,8 +68,8 @@ defmodule Egapp.Parser.FSMTest do
     assert resp =~ "<not-well-formed"
   end
 
-  test "stream with unbound prefix", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "stream with unbound prefix", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <stream:stream>
@@ -85,8 +85,8 @@ defmodule Egapp.Parser.FSMTest do
     assert resp =~ "<not-well-formed"
   end
 
-  test "stream with duplicate attributes", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "stream with duplicate attributes", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <stream:stream foo="bar" foo="bar">
@@ -102,8 +102,8 @@ defmodule Egapp.Parser.FSMTest do
     assert resp =~ "<not-well-formed"
   end
 
-  test "no stream tag", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "no stream tag", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = "<foo>"
 
@@ -118,8 +118,8 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   @tag :skip
-  test "can transition to second state", %{event_man: event_man} do
-    fsm = start_supervised!({FSM, event_man: event_man, init_state: :begin})
+  test "can transition to second state", %{xmpp_fsm: xmpp_fsm} do
+    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     foo = """
     <stream:stream

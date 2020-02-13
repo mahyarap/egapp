@@ -3,11 +3,11 @@ defmodule Egapp.Parser.XML do
 
   @impl true
   def init(conn) do
-    {:ok, event_man} = :gen_statem.start_link(Egapp.XMPP.FSM, [to: conn, mod: Egapp.Server], [])
-    {:ok, fsm} = :gen_fsm.start_link(Egapp.Parser.XML.FSM, [event_man: event_man], [])
-    Process.monitor(fsm)
-    stream = :fxml_stream.new(fsm, :infinity, [])
-    {:ok, %{fsm: fsm, event_man: event_man, stream: stream, conn: conn}}
+    {:ok, xmpp_fsm} = :gen_statem.start_link(Egapp.XMPP.FSM, [to: conn, mod: Egapp.Server], [])
+    {:ok, xml_fsm} = :gen_fsm.start_link(Egapp.Parser.XML.FSM, [xmpp_fsm: xmpp_fsm], [])
+    Process.monitor(xml_fsm)
+    stream = :fxml_stream.new(xml_fsm, :infinity, [])
+    {:ok, %{xml_fsm: xml_fsm, xmpp_fsm: xmpp_fsm, stream: stream, conn: conn}}
   end
 
   def parse(parser, data) do
@@ -16,7 +16,7 @@ defmodule Egapp.Parser.XML do
 
   @impl true
   def handle_cast(data, state) do
-    case :sys.get_state(state.fsm) do
+    case :sys.get_state(state.xml_fsm) do
       {:begin, _} ->
         :fxml_stream.reset(state.stream)
         :fxml_stream.parse(state.stream, data)
