@@ -1,5 +1,5 @@
 defmodule Egapp.Repo do
-  @moduledoce false
+  @moduledoc false
 
   use Ecto.Repo,
     otp_app: :egapp,
