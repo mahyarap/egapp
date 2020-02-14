@@ -123,6 +123,18 @@ defmodule Egapp.XMPP.FSM do
     {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
+  def auth({:call, from}, {_tag_name, attrs}, state) do
+    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+    apply(state.mod, :send, [state.to, resp])
+    {:stop_and_reply, :normal, {:reply, from, :stop}, state}
+  end
+
+  def auth({:call, from}, {_tag_name, attrs, _data}, state) do
+    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+    apply(state.mod, :send, [state.to, resp])
+    {:stop_and_reply, :normal, {:reply, from, :stop}, state}
+  end
+
   def bind({:call, from}, {"iq", attrs, [{:xmlel, "bind", child_attrs, child_data}]}, state) do
     child_node = {"bind", to_map(child_attrs), child_data}
     {status, resp} = Stanza.iq(attrs, child_node, state)
