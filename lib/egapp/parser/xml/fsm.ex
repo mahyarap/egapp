@@ -21,7 +21,7 @@ defmodule Egapp.Parser.XML.FSM do
   def init(args) do
     parser = Keyword.fetch!(args, :parser)
     xmpp_fsm = Keyword.fetch!(args, :xmpp_fsm)
-    init_state = Keyword.get(args, :init_state, :begin)
+    init_state = Keyword.get(args, :init_state, :xml_stream_start)
 
     state = %{
       parser: parser,
@@ -33,54 +33,51 @@ defmodule Egapp.Parser.XML.FSM do
 
   @impl true
   def handle_info(info, state, data) do
-    Logger.debug("fsm: #{inspect({info, state, data})}")
+    Logger.debug("#{inspect({info, state, data})}")
   end
 
   @impl true
   def handle_event({:xmlstreamcdata, data}, current_state, state_data) do
     # TODO
-    Logger.debug("fsm: #{inspect({:xml_stream_cdata, data, current_state, state_data})}")
+    Logger.debug("#{inspect({:xml_stream_cdata, data, current_state, state_data})}")
     {:next_state, current_state, state_data}
   end
 
   @impl true
   def handle_sync_event(a, b, c, d) do
-    Logger.debug("fsm: #{inspect({a, b, c, d})}")
+    Logger.debug("#{inspect({a, b, c, d})}")
     {a, b, c, d}
   end
 
-  defp to_map(attrs) do
-    Enum.into(attrs, %{})
-  end
-
-  def begin({:xmlstreamstart, tag_name, attrs}, state) do
-    Logger.debug("fsm: #{inspect({:begin, tag_name, attrs, state})}")
+  def xml_stream_start({:xmlstreamstart, tag_name, attrs}, state) do
+    Logger.debug(
+      "state=xml_stream_start event=xmlstreamstart tag_name=#{tag_name} attrs=#{inspect(attrs)}"
+    )
 
     case :gen_statem.call(state.xmpp_fsm, {tag_name, to_map(attrs)}) do
-      :continue -> {:next_state, :xml_stream_start, state}
+      :continue -> {:next_state, :xml_stream_element, state}
       :stop -> {:stop, :normal, state}
     end
   end
 
-  def begin({:xmlstreamerror, error}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_error, error, state})}")
+  def xml_stream_start({:xmlstreamerror, error}, state) do
+    Logger.debug("state=xml_stream_start event=xmlstreamerror error=#{inspect(error)}")
     :gen_statem.call(state.xmpp_fsm, {:error, error})
     {:stop, :normal, state}
   end
 
-  def xml_stream_start({:xmlstreamelement, tag_name, attrs}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_element, tag_name, attrs, state})}")
-    {:next_state, :xml_stream_element, state}
-  end
-
-  def xml_stream_start({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_element, child, to_map(attrs), data, state})}")
+  def xml_stream_element({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
+    Logger.debug(
+      "state=xml_stream_element event=xmlstreamelement tag_name=#{child} attrs=#{inspect(attrs)} data=#{
+        inspect(data)
+      }"
+    )
 
     next_state =
       case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), remove_whitespace(data)}) do
         :reset ->
           :ok = Egapp.Parser.XML.reset(state.parser)
-          :begin
+          :xml_stream_start
 
         _ ->
           :xml_stream_element
@@ -89,44 +86,15 @@ defmodule Egapp.Parser.XML.FSM do
     {:next_state, next_state, state}
   end
 
-  def xml_stream_start({:xmlstreamend, tag_name}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_end, tag_name, state})}")
-    {:next_state, :xml_stream_start, state}
-  end
-
-  def xml_stream_start({:xmlstreamerror, foo}, state) do
-    Logger.debug("fsm: #{inspect({:xmlstreamerror, foo, state})}")
-  end
-
-  def xml_stream_end({:xmlstreamend, data}, state) do
-    Logger.debug("fsm: #{inspect({:xml_end, data, state})}")
-    {:next_state, :xml_stream_start, state}
-  end
-
-  def xml_stream_element({:xmlstreamcdata, data}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_cdata, data, state})}")
-    {:next_state, :xml_stream_cdata, state}
-  end
-
-  def xml_stream_element({:xmlstreamelement, {:xmlel, child, attrs, data}}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_element, child, attrs, data, state})}")
-    :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), remove_whitespace(data)})
-    {:next_state, :xml_stream_element, state}
+  def xml_stream_element({:xmlstreamerror, error}, state) do
+    Logger.debug("state=xml_stream_start event=xmlstreamerror error=#{inspect(error)}")
+    :gen_statem.call(state.xmpp_fsm, {:error, error})
+    {:stop, :normal, state}
   end
 
   def xml_stream_element({:xmlstreamend, _tag_name}, state) do
     :gen_statem.call(state.xmpp_fsm, :end)
     {:stop, :normal, state}
-  end
-
-  def xml_stream_cdata({:xmlstreamelement, tag_name, attrs}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_element, tag_name, attrs, state})}")
-    {:next_state, :xml_stream_element, state}
-  end
-
-  def xml_stream_cdata({:xmlstreamelement, tag_name}, state) do
-    Logger.debug("fsm: #{inspect({:xml_stream_element, tag_name, state})}")
-    {:next_state, :xml_stream_element, state}
   end
 
   defp remove_whitespace(data) do
@@ -145,6 +113,10 @@ defmodule Egapp.Parser.XML.FSM do
   end
 
   defp do_remove_whitespace([], result) do
-    result |> Enum.reverse()
+    Enum.reverse(result)
+  end
+
+  defp to_map(attrs) do
+    Enum.into(attrs, %{})
   end
 end

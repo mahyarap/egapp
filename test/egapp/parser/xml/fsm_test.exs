@@ -14,7 +14,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "can transition to initial state", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     stream = """
@@ -26,12 +26,12 @@ defmodule Egapp.Parser.XML.FSMTest do
     version="1.0">\
     """
 
-    assert {:begin, _} = :sys.get_state(fsm)
+    assert {:xml_stream_start, _} = :sys.get_state(fsm)
 
     :fxml_stream.new(fsm)
     |> :fxml_stream.parse(stream)
 
-    assert {:xml_stream_start, _} = :sys.get_state(fsm)
+    assert {:xml_stream_element, _} = :sys.get_state(fsm)
     assert_received resp
     assert not Enum.empty?(resp)
   end
@@ -39,7 +39,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "stream with syntax error", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     stream = "syntax error"
@@ -57,7 +57,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "not well formed stream", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     stream = """
@@ -77,7 +77,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "stream with unbound prefix", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     stream = """
@@ -97,7 +97,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "stream with duplicate attributes", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     stream = """
@@ -117,7 +117,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "no stream tag", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     stream = "<foo>"
@@ -136,7 +136,7 @@ defmodule Egapp.Parser.XML.FSMTest do
   test "can transition to second state", %{xmpp_fsm: xmpp_fsm} do
     fsm =
       start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :begin}
+        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
       )
 
     foo = """
@@ -151,7 +151,7 @@ defmodule Egapp.Parser.XML.FSMTest do
     <iq type='set' id='purple35aab1c4'><session xmlns='urn:ietf:params:xml:ns:xmpp-session'/></iq>\
     """
 
-    assert {:begin, _} = :sys.get_state(fsm)
+    assert {:xml_stream_start, _} = :sys.get_state(fsm)
 
     stream =
       :fxml_stream.new(fsm)
