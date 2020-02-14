@@ -19,10 +19,12 @@ defmodule Egapp.Parser.XML.FSM do
 
   @impl true
   def init(args) do
+    parser = Keyword.fetch!(args, :parser)
     xmpp_fsm = Keyword.fetch!(args, :xmpp_fsm)
     init_state = Keyword.get(args, :init_state, :begin)
 
     state = %{
+      parser: parser,
       xmpp_fsm: xmpp_fsm
     }
 
@@ -76,8 +78,12 @@ defmodule Egapp.Parser.XML.FSM do
 
     next_state =
       case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), remove_whitespace(data)}) do
-        :reset -> :begin
-        _ -> :xml_stream_element
+        :reset ->
+          :ok = Egapp.Parser.XML.reset(state.parser)
+          :begin
+
+        _ ->
+          :xml_stream_element
       end
 
     {:next_state, next_state, state}
