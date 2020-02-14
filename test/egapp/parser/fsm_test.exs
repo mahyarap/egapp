@@ -1,8 +1,5 @@
-defmodule Egapp.Parser.FSMTest do
+defmodule Egapp.Parser.XML.FSMTest do
   use ExUnit.Case, async: true
-
-  alias Egapp.Parser.XML.FSM
-  alias Egapp.Parser.XML.EventMan
 
   setup_all do
     Application.ensure_all_started(:fast_xml)
@@ -10,12 +7,12 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   setup do
-    xmpp_fsm = start_supervised!({EventMan, to: self(), mod: Kernel})
+    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
     {:ok, xmpp_fsm: xmpp_fsm}
   end
 
   test "can transition to initial state", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <?xml version="1.0"?>
@@ -37,7 +34,7 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   test "stream with syntax error", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = "syntax error"
 
@@ -52,7 +49,7 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   test "not well formed stream", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <?>
@@ -69,7 +66,7 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   test "stream with unbound prefix", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <stream:stream>
@@ -86,7 +83,7 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   test "stream with duplicate attributes", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = """
     <stream:stream foo="bar" foo="bar">
@@ -103,7 +100,7 @@ defmodule Egapp.Parser.FSMTest do
   end
 
   test "no stream tag", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     stream = "<foo>"
 
@@ -119,7 +116,7 @@ defmodule Egapp.Parser.FSMTest do
 
   @tag :skip
   test "can transition to second state", %{xmpp_fsm: xmpp_fsm} do
-    fsm = start_supervised!({FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
+    fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, init_state: :begin})
 
     foo = """
     <stream:stream

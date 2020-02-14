@@ -4,6 +4,16 @@ defmodule Egapp.XMPP.FSM do
 
   @behaviour :gen_statem
 
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
+  end
+
   @impl true
   def callback_mode, do: :state_functions
 
@@ -54,15 +64,41 @@ defmodule Egapp.XMPP.FSM do
     end
   end
 
-  def stream_init({:call, from}, {_tag_name, attrs}, state) do
-    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+  def stream_init({:call, from}, :end, state) do
+    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    {:stop_and_reply, :normal, {:reply, from, :stop}}
+  end
+
+  def stream_init({:call, from}, {:error, error}, state) do
+    resp =
+      case error do
+        {2, "syntax error"} ->
+          Stream.error(:bad_format, %{}, state)
+
+        {4, "not well-formed (invalid token)"} ->
+          Stream.error(:not_well_formed, %{}, state)
+
+        {7, "mismatched tag"} ->
+          Stream.error(:bad_format, %{}, state)
+
+        {27, "unbound prefix"} ->
+          Stream.error(:not_well_formed, %{}, state)
+
+        {8, "duplicate attribute"} ->
+          Stream.error(:not_well_formed, %{}, state)
+
+        _ ->
+          raise "should not get here"
+      end
+
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
-  def stream_init({:call, from}, :end, state) do
-    apply(state.mod, :send, [state.to, Stream.stream_end()])
-    {:stop_and_reply, :normal, {:reply, from, :stop}}
+  def stream_init({:call, from}, {_tag_name, attrs}, state) do
+    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+    apply(state.mod, :send, [state.to, resp])
+    {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
   def auth({:call, from}, {"auth", attrs, data}, state) do
