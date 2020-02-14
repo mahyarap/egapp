@@ -71,7 +71,7 @@ defmodule Egapp.Server do
       nodelay: true,
       keepalive: true,
       # Address to bind to
-      ip: address,
+      ip: address
     ]
 
     {:ok, socket} = :gen_tcp.listen(port, conn_opts)

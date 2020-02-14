@@ -4,7 +4,10 @@ defmodule Egapp.Parser.XML do
   @impl true
   def init(conn) do
     {:ok, xmpp_fsm} = :gen_statem.start_link(Egapp.XMPP.FSM, [to: conn, mod: Egapp.Server], [])
-    {:ok, xml_fsm} = :gen_fsm.start_link(Egapp.Parser.XML.FSM, [xmpp_fsm: xmpp_fsm, parser: self()], [])
+
+    {:ok, xml_fsm} =
+      :gen_fsm.start_link(Egapp.Parser.XML.FSM, [xmpp_fsm: xmpp_fsm, parser: self()], [])
+
     Process.monitor(xml_fsm)
     stream = :fxml_stream.new(xml_fsm, :infinity, [])
     {:ok, %{xml_fsm: xml_fsm, xmpp_fsm: xmpp_fsm, stream: stream, conn: conn}}
