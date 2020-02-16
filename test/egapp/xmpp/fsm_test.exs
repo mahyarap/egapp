@@ -4,13 +4,7 @@ defmodule Egapp.XMPP.FSMTest do
   require Egapp.Constants, as: Const
 
   setup do
-    child_spec = %{
-      id: Egapp.XMPP.FSM,
-      start: {Egapp.XMPP.FSM, :start_link, [[mod: Kernel, to: self()], []]}
-    }
-
-    fsm = start_supervised!(child_spec)
-
+    fsm = start_supervised!({Egapp.XMPP.FSM, mod: Kernel, to: self()})
     {:ok, %{fsm: fsm}}
   end
 
