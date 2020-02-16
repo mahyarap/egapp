@@ -1,168 +1,106 @@
 defmodule Egapp.Parser.XML.FSMTest do
   use ExUnit.Case, async: true
 
-  setup_all do
-    Application.ensure_all_started(:fast_xml)
-    :ok
-  end
+  require Egapp.Constants, as: Const
 
   setup do
     xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
-    {:ok, xmpp_fsm: xmpp_fsm}
+    xml_fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil})
+    {:ok, %{xmpp_fsm: xmpp_fsm, xml_fsm: xml_fsm}}
   end
 
-  test "transition from 1st to 2nd state", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 1st to 2nd state", %{xml_fsm: xml_fsm} do
+    assert {:xml_stream_start, _} = :sys.get_state(xml_fsm)
 
-    stream = """
-    <?xml version="1.0"?>
-    <stream:stream
-    to="example.com"
-    xmlns="jabber:client"
-    xmlns:stream="http://etherx.jabber.org/streams"
-    version="1.0">\
-    """
+    event = {
+      :xmlstreamstart,
+      "stream:stream",
+      [
+        {"to", "example.com"},
+        {"xmlns", Const.xmlns_c2s()},
+        {"xmlns:stream", Const.xmlns_stream()},
+        {"version", Const.xmpp_version()}
+      ]
+    }
 
-    assert {:xml_stream_start, _} = :sys.get_state(fsm)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(stream)
-
-    assert {:xml_stream_element, _} = :sys.get_state(fsm)
+    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
     assert_received resp
     refute Enum.empty?(resp)
   end
 
-  test "transition from 1st to 2nd state with syntax error", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 1st to 2nd state with syntax error", %{xml_fsm: xml_fsm} do
+    event = {:xmlstreamerror, {2, "syntax error"}}
+    :gen_fsm.send_event(xml_fsm, event)
 
-    stream = "syntax error"
-
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(stream)
-
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
-
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<bad-format"
   end
 
-  test "transition from 1st to 2nd state with not well formed stream", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 1st to 2nd state with not well formed stream", %{xml_fsm: xml_fsm} do
+    event = {:xmlstreamerror, {4, "not well-formed (invalid token)"}}
+    :gen_fsm.send_event(xml_fsm, event)
 
-    stream = """
-    <?>
-    """
-
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(stream)
-
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "transition from 1st to 2nd state with unbound prefix", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 1st to 2nd state with unbound prefix", %{xml_fsm: xml_fsm} do
+    event = {:xmlstreamerror, {27, "unbound prefix"}}
+    :gen_fsm.send_event(xml_fsm, event)
 
-    stream = """
-    <stream:stream>
-    """
-
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(stream)
-
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "transition from 1st to 2nd state with duplicate attributes", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 1st to 2nd state with duplicate attributes", %{xml_fsm: xml_fsm} do
+    event = {:xmlstreamerror, {8, "duplicate attribute"}}
+    :gen_fsm.send_event(xml_fsm, event)
 
-    stream = """
-    <stream:stream foo="bar" foo="bar">
-    """
-
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(stream)
-
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "transition from 1st to 2nd state with no stream tag", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 1st to 2nd state with no stream tag", %{xml_fsm: xml_fsm} do
+    event = {:xmlstreamstart, "foo", []}
+    :gen_fsm.send_event(xml_fsm, event)
 
-    stream = "<foo>"
-
-    :fxml_stream.new(fsm)
-    |> :fxml_stream.parse(stream)
-
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  # @tag :skip
-  test "transition from 2nd to 2nd state", %{xmpp_fsm: xmpp_fsm} do
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
+  test "transition from 2nd to 2nd state", %{xml_fsm: xml_fsm, xmpp_fsm: xmpp_fsm} do
+    start_supervised!(Egapp.Repo)
+    :sys.replace_state(xmpp_fsm, fn {_state, data} -> {:auth, data} end)
+    :sys.replace_state(xml_fsm, fn {_state, data} -> {:xml_stream_element, data} end)
 
-    stream_header = """
-    <stream:stream
-    to="example.com"
-    xmlns="jabber:client"
-    xmlns:stream="http://etherx.jabber.org/streams"
-    version="1.0">\
-    """
+    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
 
-    iq = """
-    <iq type='set' id='purple35aab1c4'><session xmlns='urn:ietf:params:xml:ns:xmpp-session'/></iq>\
-    """
+    attrs = [
+      {"xmlns", Const.xmlns_sasl()},
+      {"mechanism", "PLAIN"}
+    ]
 
-    assert {:xml_stream_start, _} = :sys.get_state(fsm)
+    event = {:xmlstreamelement, {:xmlel, "auth", attrs, []}}
+    :gen_fsm.send_event(xml_fsm, event)
 
-    stream =
-      :fxml_stream.new(fsm)
-      |> :fxml_stream.parse(stream_header)
-
-    assert {:xml_stream_element, _} = :sys.get_state(fsm)
-
-    :fxml_stream.parse(stream, iq)
-
-    assert {:xml_stream_element, _} = :sys.get_state(fsm)
+    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
     assert_receive resp
-    assert not Enum.empty?(resp)
+    refute Enum.empty?(resp)
   end
 end

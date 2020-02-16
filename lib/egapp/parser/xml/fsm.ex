@@ -21,14 +21,13 @@ defmodule Egapp.Parser.XML.FSM do
   def init(args) do
     parser = Keyword.fetch!(args, :parser)
     xmpp_fsm = Keyword.fetch!(args, :xmpp_fsm)
-    init_state = Keyword.get(args, :init_state, :xml_stream_start)
 
     state = %{
       parser: parser,
       xmpp_fsm: xmpp_fsm
     }
 
-    {:ok, init_state, state}
+    {:ok, :xml_stream_start, state}
   end
 
   @impl true
