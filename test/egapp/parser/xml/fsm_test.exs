@@ -3,15 +3,14 @@ defmodule Egapp.Parser.XML.FSMTest do
 
   require Egapp.Constants, as: Const
 
-  test "can transition to initial state" do
+  setup do
     xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
+    xml_fsm = start_supervised!({Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil})
+    {:ok, %{xmpp_fsm: xmpp_fsm, xml_fsm: xml_fsm}}
+  end
 
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
-
-    assert {:xml_stream_start, _} = :sys.get_state(fsm)
+  test "can transition to initial state", %{xml_fsm: xml_fsm} do
+    assert {:xml_stream_start, _} = :sys.get_state(xml_fsm)
 
     event = {
       :xmlstreamstart,
@@ -24,112 +23,73 @@ defmodule Egapp.Parser.XML.FSMTest do
       ]
     }
 
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    assert {:xml_stream_element, _} = :sys.get_state(fsm)
+    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
     assert_received resp
     refute Enum.empty?(resp)
   end
 
-  test "stream with syntax error" do
-    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
-
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
-
+  test "stream with syntax error", %{xml_fsm: xml_fsm} do
     event = {:xmlstreamerror, {2, "syntax error"}}
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<bad-format"
   end
 
-  test "not well formed stream" do
-    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
-
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
-
+  test "not well formed stream", %{xml_fsm: xml_fsm} do
     event = {:xmlstreamerror, {4, "not well-formed (invalid token)"}}
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "stream with unbound prefix" do
-    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
-
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
-
+  test "stream with unbound prefix", %{xml_fsm: xml_fsm} do
     event = {:xmlstreamerror, {27, "unbound prefix"}}
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "stream with duplicate attributes" do
-    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
-
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
-
+  test "stream with duplicate attributes", %{xml_fsm: xml_fsm} do
     event = {:xmlstreamerror, {8, "duplicate attribute"}}
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "no stream tag" do
-    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel})
-
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_start}
-      )
-
+  test "no stream tag", %{xml_fsm: xml_fsm} do
     event = {:xmlstreamstart, "foo", []}
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(fsm))
+    catch_exit(:sys.get_state(xml_fsm))
     assert_received resp
 
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<not-well-formed"
   end
 
-  test "can transition to second state" do
+  test "can transition to second state", %{xml_fsm: xml_fsm, xmpp_fsm: xmpp_fsm} do
     start_supervised!(Egapp.Repo)
-    xmpp_fsm = start_supervised!({Egapp.XMPP.FSM, to: self(), mod: Kernel, init_state: :auth})
+    :sys.replace_state(xmpp_fsm, fn {_state, data} -> {:auth, data} end)
+    :sys.replace_state(xml_fsm, fn {_state, data} -> {:xml_stream_element, data} end)
 
-    fsm =
-      start_supervised!(
-        {Egapp.Parser.XML.FSM, xmpp_fsm: xmpp_fsm, parser: nil, init_state: :xml_stream_element}
-      )
-
-    assert {:xml_stream_element, _} = :sys.get_state(fsm)
+    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
 
     attrs = [
       {"xmlns", Const.xmlns_sasl()},
@@ -137,9 +97,9 @@ defmodule Egapp.Parser.XML.FSMTest do
     ]
 
     event = {:xmlstreamelement, {:xmlel, "auth", attrs, []}}
-    :gen_fsm.send_event(fsm, event)
+    :gen_fsm.send_event(xml_fsm, event)
 
-    assert {:xml_stream_element, _} = :sys.get_state(fsm)
+    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
     assert_receive resp
     refute Enum.empty?(resp)
   end

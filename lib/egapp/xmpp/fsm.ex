@@ -19,8 +19,6 @@ defmodule Egapp.XMPP.FSM do
 
   @impl true
   def init(args) do
-    init_state = Keyword.get(args, :init_state, :stream_init)
-
     state = %{
       mod: Keyword.fetch!(args, :mod),
       to: Keyword.fetch!(args, :to),
@@ -29,7 +27,7 @@ defmodule Egapp.XMPP.FSM do
       }
     }
 
-    {:ok, init_state, state}
+    {:ok, :stream_init, state}
   end
 
   def start_link(args, opts \\ []) do
