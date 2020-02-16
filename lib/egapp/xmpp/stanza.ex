@@ -7,7 +7,6 @@ defmodule Egapp.XMPP.Stanza do
   """
 
   require Ecto.Query
-  require Egapp.Constants, as: Const
 
   alias Egapp.Config
   alias Egapp.XMPP.Jid
@@ -48,50 +47,11 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  def message(%{"type" => "chat", "to" => to} = attrs, children, state) do
-    {_, conn} =
-      to
-      |> Jid.parse()
-      |> Map.put(:resourcepart, :_)
-      |> JidConnRegistry.match_one()
-      |> case do
-        {jid, conn} -> {jid, conn}
-        nil -> {nil, nil}
-      end
-
-    attrs = Map.put(attrs, "from", Jid.full_jid(state.client.jid))
-
-    content =
-      children
-      |> Enum.map(fn {tag_name, attrs, data} ->
-        do_message(tag_name, attrs, data)
-      end)
-
-    resp =
-      message_template(build_message_attrs(attrs, state), content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
-
-    {:ok, {conn, resp}}
+  def message(%{"type" => "chat"} = attrs, children, state) do
+    Egapp.XMPP.Server.Stanza.message(attrs, children, state)
   end
 
-  defp do_message("active", _attrs, _data) do
-    {:active, [xmlns: Const.xmlns_chatstates()], []}
-  end
-
-  defp do_message("composing", _attrs, _data) do
-    {:composing, [xmlns: Const.xmlns_chatstates()], []}
-  end
-
-  defp do_message("paused", _attrs, _data) do
-    {:paused, [xmlns: Const.xmlns_chatstates()], []}
-  end
-
-  defp do_message("body", _attrs, data) do
-    [xmlcdata: body] = data
-    {:body, [String.to_charlist(body)]}
-  end
-
-  defp build_message_attrs(attrs, _state) do
+  def build_message_attrs(attrs, _state) do
     %{
       id: Map.get(attrs, "id"),
       from: Map.get(attrs, "from"),
@@ -100,7 +60,7 @@ defmodule Egapp.XMPP.Stanza do
     }
   end
 
-  defp message_template(%{id: id, to: to, from: from, type: type}, data) do
+  def message_template(%{id: id, to: to, from: from, type: type}, data) do
     iq_attrs = [
       id: id,
       from: from,
