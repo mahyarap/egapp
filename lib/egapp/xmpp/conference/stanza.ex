@@ -5,6 +5,7 @@ defmodule Egapp.XMPP.Conference.Stanza do
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
     content = Element.query(child_attrs, child_data, state)
+
     resp =
       iq_template(build_iq_attrs(attrs, 'result', state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -17,6 +18,7 @@ defmodule Egapp.XMPP.Conference.Stanza do
       from: "folan@conference.egapp.im/Alice",
       to: "mahan@egapp.im"
     }
+
     resp =
       Egapp.XMPP.Stanza.presence_template(attrs, [])
       |> :xmerl.export_simple_element(:xmerl_xml)

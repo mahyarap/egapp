@@ -16,7 +16,9 @@ defmodule Egapp.MucRegistry do
           disc_copies: [node()],
           type: :set
         ]
+
         :mnesia.create_table(:rooms, table_def)
+
       {:error, {_, {:already_exists, _}}} ->
         :mnesia.start()
     end

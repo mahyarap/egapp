@@ -21,6 +21,7 @@ defmodule Egapp.SASL.Digest do
     p3 = md5_hex(a2)
 
     _response_value = md5_hex([p1, ':', p2, ':', p3])
+
     # Check response_value == decoded["response"]
 
     _rspauth = md5_hex([p1, ':', p2, md5_hex(tl(a2))])

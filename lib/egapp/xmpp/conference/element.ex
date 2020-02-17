@@ -1,11 +1,15 @@
 defmodule Egapp.XMPP.Conference.Element do
   require Egapp.Constants, as: Const
 
-  def query(%{"xmlns" => Const.xmlns_disco_info(), "node" => Const.xmlns_muc_traffic}, _data, _state) do
+  def query(
+        %{"xmlns" => Const.xmlns_disco_info(), "node" => Const.xmlns_muc_traffic()},
+        _data,
+        _state
+      ) do
     {
       :error,
       [type: 'cancel'],
-      [{:"service-unavailable", [xmlns: Const.xmlns_stanza], []}]
+      [{:"service-unavailable", [xmlns: Const.xmlns_stanza()], []}]
     }
   end
 
