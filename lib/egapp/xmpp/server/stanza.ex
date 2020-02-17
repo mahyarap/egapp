@@ -56,6 +56,22 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, resp}
   end
 
+  def iq(%{"type" => "set"} = attrs, {"query", child_attrs, child_data}, state) do
+    child_data =
+      case child_data do
+        [{:xmlel, tag_name, child_attrs, child_data}] ->
+          {tag_name, to_map(child_attrs), child_data}
+      end
+
+    content = Element.query(child_attrs, child_data, state)
+
+    resp =
+      iq_template(build_iq_attrs(attrs, 'result', state), content)
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:ok, resp}
+  end
+
   def iq(%{"type" => "set"} = attrs, {"bind", child_attrs, child_data}, state) do
     content = Element.bind(child_attrs, child_data, state)
 
@@ -221,4 +237,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     end)
   end
 
+  defp to_map(attrs) do
+    Enum.into(attrs, %{})
+  end
 end

@@ -23,7 +23,7 @@ defmodule Egapp.XMPP.Server.Element do
     query_template([xmlns: Const.xmlns_disco_info()], content)
   end
 
-  def query(%{"xmlns" => Const.xmlns_roster()}, _data, state) do
+  def query(%{"xmlns" => Const.xmlns_roster()}, [], state) do
     roster =
       Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
       |> Egapp.Repo.one()
@@ -39,6 +39,37 @@ defmodule Egapp.XMPP.Server.Element do
       end)
 
     query_template([xmlns: Const.xmlns_roster()], items)
+  end
+
+  def query(
+        %{"xmlns" => Const.xmlns_roster()},
+        {"item", %{"subscription" => "remove", "jid" => jid}, _child_data},
+        state
+      ) do
+    jid = Jid.partial_parse(jid)
+
+    result =
+      Ecto.Query.from(u in Egapp.Repo.User,
+        join: r in Egapp.Repo.Roster,
+        on: u.id == r.user_id,
+        where: u.username == ^jid.localpart and r.user_id == ^state.client.id
+      )
+      |> Egapp.Repo.one()
+
+    if result do
+      Egapp.Repo.delete(result)
+      nil
+    else
+      {
+        :error,
+        [type: 'modify'],
+        [{:"item-not-found", [xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'], []}]
+      }
+    end
+  end
+
+  def query(%{"xmlns" => Const.xmlns_roster()}, {"item", %{"jid" => jid}, _child_data}, state) do
+    #TODO
   end
 
   def query(%{"xmlns" => Const.xmlns_bytestreams()}, _data, _state) do
