@@ -114,4 +114,6 @@ defmodule Egapp.XMPP.Element do
   def feature(xmlns), do: {:feature, [var: xmlns], []}
 
   def identity(category, type), do: {:identity, [category: category, type: type], []}
+
+  def item(attrs, content), do: {:item, attrs, content}
 end

@@ -3,14 +3,15 @@ defmodule Egapp.XMPP.Server.Element do
   require Egapp.Constants, as: Const
 
   alias Egapp.XMPP.Jid
+  alias Egapp.XMPP.Element
 
-  def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, _state) do
-    query_template(
-      [xmlns: Const.xmlns_disco_items()],
-      [
-        {:item, [jid: "conference.egapp.im"], []}
-      ]
-    )
+  def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, state) do
+    content =
+      state.cats
+      |> Enum.filter(fn cat -> cat.address() != Egapp.XMPP.Server.address() end)
+      |> Enum.map(fn cat -> Element.item([jid: cat.address()], []) end)
+
+    query_template([xmlns: Const.xmlns_disco_items()], content)
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
