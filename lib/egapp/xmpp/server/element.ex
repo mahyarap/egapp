@@ -17,9 +17,9 @@ defmodule Egapp.XMPP.Server.Element do
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
     content =
       state.cats
-      |> Enum.filter(fn cat -> cat.address() == "egapp.im" end)
+      |> Enum.filter(fn cat -> cat.address() == Egapp.XMPP.Server.address() end)
       |> Enum.map(fn cat -> [cat.identity() | cat.features()] end)
-      |> hd()
+      |> Kernel.hd()
 
     query_template([xmlns: Const.xmlns_disco_info()], content)
   end
