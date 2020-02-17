@@ -7,9 +7,11 @@ defmodule Egapp.XMPP.Server.Stanza do
       iq_template: 2,
       build_iq_attrs: 3,
       message_template: 2,
-      build_message_attrs: 2
+      presence_template: 2,
+      build_message_attrs: 2,
     ]
 
+  alias Egapp.Config
   alias Egapp.XMPP.Jid
   alias Egapp.JidConnRegistry
   alias Egapp.XMPP.Server.Element
@@ -122,7 +124,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:body, [String.to_charlist(body)]}
   end
 
-  def presence(_attrs, _data, state) do
+  def presence(attrs, _data, state) when is_map_key(attrs, "to") do
     roster =
       Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
       |> Egapp.Repo.one()
@@ -146,4 +148,77 @@ defmodule Egapp.XMPP.Server.Stanza do
       {conn, resp}
     end)
   end
+
+  @doc """
+  Handles initial presence (a presence without the `to` attribute).
+  """
+  def presence(attrs, _child, state) when not is_map_key(attrs, "to") do
+    roster =
+      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
+      |> Egapp.Repo.one()
+      |> Egapp.Repo.preload(:users)
+
+    presence_probes = create_presence_probe(roster.users, state)
+    initial_presences = create_initial_presence(roster.users, state)
+    presence_probes ++ initial_presences
+  end
+
+  defp create_initial_presence(users, state) do
+    users
+    |> Enum.map(fn contact ->
+      pattern = %Jid{
+        localpart: contact.username,
+        domainpart: Config.get(:domain_name),
+        resourcepart: :_
+      }
+
+      case JidConnRegistry.match_one(pattern) do
+        {jid, conn} -> {jid, conn}
+        nil -> {nil, nil}
+      end
+    end)
+    |> Enum.reject(&match?({nil, nil}, &1))
+    |> Enum.map(fn {contact, conn} ->
+      attrs = %{
+        from: Jid.full_jid(state.client.jid),
+        to: Jid.bare_jid(contact)
+      }
+
+      resp =
+        presence_template(attrs, [])
+        |> :xmerl.export_simple_element(:xmerl_xml)
+
+      {conn, resp}
+    end)
+  end
+
+  defp create_presence_probe(users, state) do
+    users
+    |> Enum.map(fn contact ->
+      pattern = %Jid{
+        localpart: contact.username,
+        domainpart: Config.get(:domain_name),
+        resourcepart: :_
+      }
+
+      case JidConnRegistry.match_one(pattern) do
+        {jid, conn} -> {jid, conn}
+        nil -> {nil, nil}
+      end
+    end)
+    |> Enum.reject(&match?({nil, nil}, &1))
+    |> Enum.map(fn {contact, _conn} ->
+      attrs = %{
+        from: Jid.full_jid(contact),
+        to: Jid.bare_jid(state.client.jid)
+      }
+
+      resp =
+        presence_template(attrs, [])
+        |> :xmerl.export_simple_element(:xmerl_xml)
+
+      {state.to, resp}
+    end)
+  end
+
 end

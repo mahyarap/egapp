@@ -5,12 +5,8 @@ defmodule Egapp.XMPP.Stanza do
   XMPP defines three stanzas: iq, message, presence. In addition, there are
   five common attributes for these stanza types: to, from, id, type, xml:lang.
   """
-
-  require Ecto.Query
-
   alias Egapp.Config
   alias Egapp.XMPP.Jid
-  alias Egapp.JidConnRegistry
 
   def iq(%{"to" => to} = attrs, data, state) do
     case Jid.partial_parse(to) do
@@ -81,76 +77,8 @@ defmodule Egapp.XMPP.Stanza do
     end
   end
 
-  @doc """
-  Handles initial presence (a presence without the `to` attribute).
-  """
-  def presence(attrs, _child, state) when not is_map_key(attrs, "to") do
-    roster =
-      Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
-      |> Egapp.Repo.one()
-      |> Egapp.Repo.preload(:users)
-
-    presence_probes = create_presence_probe(roster.users, state)
-    initial_presences = create_initial_presence(roster.users, state)
-    presence_probes ++ initial_presences
-  end
-
-  defp create_initial_presence(users, state) do
-    users
-    |> Enum.map(fn contact ->
-      pattern = %Jid{
-        localpart: contact.username,
-        domainpart: Config.get(:domain_name),
-        resourcepart: :_
-      }
-
-      case JidConnRegistry.match_one(pattern) do
-        {jid, conn} -> {jid, conn}
-        nil -> {nil, nil}
-      end
-    end)
-    |> Enum.reject(&match?({nil, nil}, &1))
-    |> Enum.map(fn {contact, conn} ->
-      attrs = %{
-        from: Jid.full_jid(state.client.jid),
-        to: Jid.bare_jid(contact)
-      }
-
-      resp =
-        presence_template(attrs, [])
-        |> :xmerl.export_simple_element(:xmerl_xml)
-
-      {conn, resp}
-    end)
-  end
-
-  defp create_presence_probe(users, state) do
-    users
-    |> Enum.map(fn contact ->
-      pattern = %Jid{
-        localpart: contact.username,
-        domainpart: Config.get(:domain_name),
-        resourcepart: :_
-      }
-
-      case JidConnRegistry.match_one(pattern) do
-        {jid, conn} -> {jid, conn}
-        nil -> {nil, nil}
-      end
-    end)
-    |> Enum.reject(&match?({nil, nil}, &1))
-    |> Enum.map(fn {contact, _conn} ->
-      attrs = %{
-        from: Jid.full_jid(contact),
-        to: Jid.bare_jid(state.client.jid)
-      }
-
-      resp =
-        presence_template(attrs, [])
-        |> :xmerl.export_simple_element(:xmerl_xml)
-
-      {state.to, resp}
-    end)
+  def presence(attrs, child, state) when not is_map_key(attrs, "to") do
+    Egapp.XMPP.Server.Stanza.presence(attrs, child, state)
   end
 
   def presence_template(%{from: from, to: to}, content) do
