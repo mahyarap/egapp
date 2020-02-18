@@ -49,27 +49,26 @@ defmodule Egapp.XMPP.Server.Element do
       ) do
     jid = Jid.partial_parse(jid)
 
-    result =
-      Ecto.Query.from(u in Egapp.Repo.User,
-        join: r in Egapp.Repo.Roster,
-        on: u.id == r.user_id,
-        where: u.username == ^jid.localpart and r.user_id == ^state.client.id
+    roster =
+      Ecto.Query.from(r in Egapp.Repo.Roster,
+        join: u in assoc(r, :users),
+        where: r.user_id == ^state.client.id and u.username == ^jid.localpart,
+        preload: :users
       )
       |> Egapp.Repo.one()
 
-    if result do
-      Egapp.Repo.delete(result)
-      nil
-    else
-      {
-        :error,
-        [type: 'modify'],
-        [{:"item-not-found", [xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'], []}]
-      }
+    user = hd(roster.users)
+
+    if roster do
+      Ecto.Query.from(ur in "users_rosters",
+        where: ur.user_id == ^user.id and ur.roster_id == ^roster.id
+      )
+      |> Egapp.Repo.delete_all()
+      []
     end
   end
 
-  def query(%{"xmlns" => Const.xmlns_roster()}, {"item", %{"jid" => jid}, _child_data}, state) do
+  def query(%{"xmlns" => Const.xmlns_roster()}, {"item", %{"jid" => _jid}, _child_data}, _state) do
     #TODO
   end
 
