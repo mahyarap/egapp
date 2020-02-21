@@ -8,12 +8,6 @@ defmodule Egapp.XMPP.StanzaTest do
   alias Egapp.XMPP.Stanza
   alias Egapp.JidConnRegistry
 
-  setup_all do
-    start_supervised!(Egapp.Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Egapp.Repo, :manual)
-    :ok
-  end
-
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
     start_supervised!(JidConnRegistry)

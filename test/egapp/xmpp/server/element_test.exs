@@ -9,8 +9,6 @@ defmodule Egapp.XMPP.Server.ElementTest do
   alias Egapp.XMPP.Server.Element
 
   setup do
-    start_supervised!(Egapp.Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Egapp.Repo, :manual)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
   end
 
