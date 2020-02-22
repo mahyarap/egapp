@@ -53,7 +53,7 @@ defmodule Egapp.XMPP.Server.Element do
       Ecto.Query.from(r in Egapp.Repo.Roster,
         join: u in assoc(r, :users),
         where: r.user_id == ^state.client.id and u.username == ^jid.localpart,
-        preload: :users
+        preload: [users: u]
       )
       |> Egapp.Repo.one()
 

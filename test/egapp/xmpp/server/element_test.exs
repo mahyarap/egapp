@@ -117,7 +117,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
       )
 
     roster = query |> Egapp.Repo.one()
-    assert [%Egapp.Repo.User{}] = roster.users
+    assert [%Egapp.Repo.User{username: "bar"}] = roster.users
 
     result = Element.query(attrs, data, state)
     assert [] = result
