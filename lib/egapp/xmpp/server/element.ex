@@ -64,12 +64,31 @@ defmodule Egapp.XMPP.Server.Element do
         where: ur.user_id == ^user.id and ur.roster_id == ^roster.id
       )
       |> Egapp.Repo.delete_all()
+
       []
     end
   end
 
-  def query(%{"xmlns" => Const.xmlns_roster()}, {"item", %{"jid" => _jid}, _child_data}, _state) do
-    #TODO
+  def query(%{"xmlns" => Const.xmlns_roster()}, {"item", %{"jid" => jid}, _child_data}, state) do
+    jid = Jid.partial_parse(jid)
+
+    roster =
+      Ecto.Query.from(r in Egapp.Repo.Roster,
+        where: r.user_id == ^state.client.id,
+        preload: [:users]
+      )
+      |> Egapp.Repo.one()
+
+    user =
+      Ecto.Query.from(u in Egapp.Repo.User,
+        where: u.username == ^jid.localpart
+      )
+      |> Egapp.Repo.one()
+
+    if roster != nil and user != nil do
+      Egapp.Repo.insert_all("users_rosters", [%{user_id: user.id, roster_id: roster.id}])
+      []
+    end
   end
 
   def query(%{"xmlns" => Const.xmlns_bytestreams()}, _data, _state) do

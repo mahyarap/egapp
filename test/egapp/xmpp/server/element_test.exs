@@ -67,6 +67,35 @@ defmodule Egapp.XMPP.Server.ElementTest do
     assert result =~ ~s(jid="#{Jid.bare_jid(jid)}")
   end
 
+  test "adding contact to roster" do
+    jid = Jid.parse("bar@egapp.im")
+    attrs = %{"xmlns" => Const.xmlns_roster()}
+    data = {"item", %{"jid" => Jid.bare_jid(jid)}, []}
+
+    user1 = Egapp.Repo.insert!(%User{username: "foo"})
+    Egapp.Repo.insert!(%User{username: "bar"})
+
+    %Roster{user: user1}
+    |> Egapp.Repo.insert!()
+
+    state = %{client: %{id: user1.id}}
+
+    query =
+      Ecto.Query.from(r in Egapp.Repo.Roster,
+        where: r.user_id == ^user1.id,
+        preload: :users
+      )
+
+    roster = query |> Egapp.Repo.one()
+    assert [] = roster.users
+
+    result = Element.query(attrs, data, state)
+    assert [] = result
+
+    roster = query |> Egapp.Repo.one()
+    assert [%Egapp.Repo.User{username: "bar"}] = roster.users
+  end
+
   test "removing contact from roster" do
     jid = Jid.parse("bar@egapp.im")
     attrs = %{"xmlns" => Const.xmlns_roster()}
