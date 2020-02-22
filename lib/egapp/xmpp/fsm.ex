@@ -176,8 +176,10 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def stanza({:call, from}, {"presence", attrs, data}, state) do
-    contacts = Stanza.presence(attrs, data, state)
-    for {conn, resp} <- contacts, do: apply(state.mod, :send, [conn, resp])
+    Stanza.presence(attrs, data, state)
+    |> Enum.each(fn {conn, resp} ->
+      apply(state.mod, :send, [conn, resp])
+    end)
     {:next_state, :stanza, state, {:reply, from, :continue}}
   end
 
