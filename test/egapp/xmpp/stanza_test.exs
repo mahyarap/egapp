@@ -56,6 +56,7 @@ defmodule Egapp.XMPP.StanzaTest do
   test "returns correct disco items", %{state: state} do
     attrs = %{"type" => "get", "id" => state.id}
     child = {"query", %{"xmlns" => Const.xmlns_disco_items()}, []}
+    state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
     assert {:ok, resp} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
