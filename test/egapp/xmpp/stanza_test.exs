@@ -200,16 +200,17 @@ defmodule Egapp.XMPP.StanzaTest do
   end
 
   test "returns correct message", %{state: state} do
+    to = "baz@buf"
     attrs = %{
       "type" => "chat",
       "id" => state.id,
-      "to" => "baz@buf"
+      "to" => to
     }
 
     child = [{"active", %{"xmlns" => Const.xmlns_version()}, []}]
     jid = %Jid{localpart: "foo", domainpart: "bar", resourcepart: "123"}
     state = put_in(state, [:client, :jid], jid)
-    JidConnRegistry.put(Jid.bare_jid(jid), [])
+    JidConnRegistry.put(to, {jid, nil})
 
     assert {:ok, {to, resp}} = Stanza.message(attrs, child, state)
     resp = IO.chardata_to_string(resp)

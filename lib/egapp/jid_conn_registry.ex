@@ -15,26 +15,17 @@ defmodule Egapp.JidConnRegistry do
 
   @impl true
   def init(_) do
-    :ets.new(__MODULE__, [:set, :named_table, :public])
+    :ets.new(__MODULE__, [:bag, :named_table, :public])
     {:ok, %{}}
   end
 
-  def get(key) do
-    case :ets.lookup(__MODULE__, key) do
-      [{^key, value}] -> value
-      [] -> nil
-    end
+  def match(key) do
+    :ets.lookup(__MODULE__, key)
+    |> Enum.map(fn {_bare_jid, jid, conn} -> {jid, conn} end)
   end
 
-  def put(key, value) do
-    :ets.insert(__MODULE__, {key, value})
-  end
-
-  def match_one(key_pattern) do
-    case :ets.match_object(__MODULE__, {key_pattern, :_}) do
-      [{key, value}] -> {key, value}
-      [] -> nil
-    end
+  def put(key, {jid, conn} = _value) do
+    :ets.insert(__MODULE__, {key, jid, conn})
   end
 
   def list do

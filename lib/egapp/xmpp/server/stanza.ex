@@ -101,12 +101,10 @@ defmodule Egapp.XMPP.Server.Stanza do
     {_, conn} =
       to
       |> Jid.parse()
-      |> Map.put(:resourcepart, :_)
-      |> JidConnRegistry.match_one()
-      |> case do
-        {jid, conn} -> {jid, conn}
-        nil -> {nil, nil}
-      end
+      |> Jid.bare_jid()
+      |> JidConnRegistry.match()
+      # TODO: fix this
+      |> hd()
 
     attrs = Map.put(attrs, "from", Jid.full_jid(state.client.jid))
 
@@ -148,7 +146,12 @@ defmodule Egapp.XMPP.Server.Stanza do
 
     roster.users
     |> Enum.map(fn contact ->
-      {contact, JidConnRegistry.get(contact.username <> "@egapp.im")}
+      jid = %Jid{
+        localpart: contact.username,
+        domainpart: Config.get(:domain_name),
+      }
+
+      {contact, JidConnRegistry.match(Jid.bare_jid(jid))}
     end)
     |> Enum.filter(&elem(&1, 1))
     |> Enum.map(fn {contact, conn} ->
@@ -182,22 +185,19 @@ defmodule Egapp.XMPP.Server.Stanza do
   defp create_initial_presence(users, state) do
     users
     |> Enum.map(fn contact ->
-      pattern = %Jid{
+      jid = %Jid{
         localpart: contact.username,
         domainpart: Config.get(:domain_name),
-        resourcepart: :_
       }
 
-      case JidConnRegistry.match_one(pattern) do
-        {jid, conn} -> {jid, conn}
-        nil -> {nil, nil}
-      end
+      Jid.bare_jid(jid)
+      |> JidConnRegistry.match()
     end)
-    |> Enum.reject(&match?({nil, nil}, &1))
-    |> Enum.map(fn {contact, conn} ->
+    |> List.flatten()
+    |> Enum.map(fn {jid, conn} ->
       attrs = %{
         from: Jid.full_jid(state.client.jid),
-        to: Jid.bare_jid(contact)
+        to: Jid.bare_jid(jid)
       }
 
       resp =
@@ -211,18 +211,15 @@ defmodule Egapp.XMPP.Server.Stanza do
   defp create_presence_probe(users, state) do
     users
     |> Enum.map(fn contact ->
-      pattern = %Jid{
+      jid = %Jid{
         localpart: contact.username,
         domainpart: Config.get(:domain_name),
-        resourcepart: :_
       }
 
-      case JidConnRegistry.match_one(pattern) do
-        {jid, conn} -> {jid, conn}
-        nil -> {nil, nil}
-      end
+      Jid.bare_jid(jid)
+      |> JidConnRegistry.match()
     end)
-    |> Enum.reject(&match?({nil, nil}, &1))
+    |> List.flatten()
     |> Enum.map(fn {contact, _conn} ->
       attrs = %{
         from: Jid.full_jid(contact),
