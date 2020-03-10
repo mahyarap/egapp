@@ -43,7 +43,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     assert result =~ ~s(<feature)
   end
 
-  test "getting roster" do
+  test "getting roster when contact exists" do
     attrs = %{"xmlns" => Const.xmlns_roster()}
 
     user1 = Egapp.Repo.insert!(%User{username: "foo"})
@@ -65,6 +65,26 @@ defmodule Egapp.XMPP.Server.ElementTest do
 
     jid = %Jid{localpart: user2.username, domainpart: Egapp.XMPP.Server.address()}
     assert result =~ ~s(jid="#{Jid.bare_jid(jid)}")
+  end
+
+  test "getting roster with no contacts" do
+    attrs = %{"xmlns" => Const.xmlns_roster()}
+
+    user1 = Egapp.Repo.insert!(%User{username: "foo"})
+
+    %Roster{user: user1, users: []}
+    |> Egapp.Repo.insert!()
+
+    state = %{client: %{id: user1.id}}
+
+    result =
+      Element.query(attrs, [], state)
+      |> :xmerl.export_simple_element(:xmerl_xml)
+      |> IO.chardata_to_string()
+
+    assert result =~ ~s(<query)
+    assert result =~ ~s(xmlns="#{Const.xmlns_roster()}")
+    refute result =~ ~s(<item)
   end
 
   test "adding contact to roster" do

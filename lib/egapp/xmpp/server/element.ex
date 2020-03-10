@@ -2,6 +2,7 @@ defmodule Egapp.XMPP.Server.Element do
   require Ecto.Query
   require Egapp.Constants, as: Const
 
+  alias Egapp.Config
   alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Element
 
@@ -24,6 +25,11 @@ defmodule Egapp.XMPP.Server.Element do
     query_template([xmlns: Const.xmlns_disco_info()], content)
   end
 
+  @doc """
+  Roster get
+
+  RFC6121 2.1.3
+  """
   def query(%{"xmlns" => Const.xmlns_roster()}, [], state) do
     roster =
       Ecto.Query.from(r in Egapp.Repo.Roster, where: r.user_id == ^state.client.id)
@@ -32,11 +38,17 @@ defmodule Egapp.XMPP.Server.Element do
 
     items =
       Enum.map(roster.users, fn user ->
-        {
-          :item,
-          [jid: String.to_charlist(user.username <> "@egapp.im"), subscription: 'both'],
-          []
+        jid = %Jid{
+          localpart: user.username,
+          domainpart: Config.get(:domain_name)
         }
+
+        attrs = [
+          jid: Jid.bare_jid(jid),
+          subscription: 'both'
+        ]
+
+        Element.item(attrs, [])
       end)
 
     query_template([xmlns: Const.xmlns_roster()], items)
