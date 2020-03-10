@@ -158,7 +158,7 @@ defmodule Egapp.XMPP.Server.Element do
     }
   end
 
-  def session(_attrs, _data, _state), do: []
+  def session(_attrs, _data, state), do: [{state.to, []}]
 
   def session do
     {

@@ -13,6 +13,7 @@ defmodule Egapp.XMPP.StanzaTest do
     start_supervised!(JidConnRegistry)
 
     state = %{
+      to: self(),
       client: %{},
       id: Utils.generate_id() |> Integer.to_string()
     }
@@ -44,7 +45,7 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"type" => "set", "id" => state.id}
     child = {"session", %{"xmlns" => Const.xmlns_bind()}, []}
 
-    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)

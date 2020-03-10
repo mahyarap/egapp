@@ -167,7 +167,9 @@ defmodule Egapp.XMPP.FSM do
       end
 
     {status, resp} = Stanza.iq(attrs, child_node, state)
-    apply(state.mod, :send, [state.to, resp])
+    Enum.each(resp, fn {conn, content} ->
+      apply(state.mod, :send, [conn, content])
+    end)
 
     case status do
       :ok -> {:next_state, :stanza, state, {:reply, from, :continue}}
