@@ -117,7 +117,7 @@ defmodule Egapp.XMPP.StanzaTest do
   test "returns correct vcard", %{state: state} do
     attrs = %{"type" => "get", "id" => state.id}
     child = {"vCard", %{"xmlns" => Const.xmlns_vcard()}, []}
-    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)

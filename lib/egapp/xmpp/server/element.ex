@@ -172,12 +172,14 @@ defmodule Egapp.XMPP.Server.Element do
     }
   end
 
-  def vcard(_attrs, _data, _state) do
-    {
+  def vcard(_attrs, _data, state) do
+    resp = {
       :vCard,
       [xmlns: Const.xmlns_vcard()],
       []
     }
+
+    [{state.to, resp}]
   end
 
   def ping(_attrs, _data, _state) do

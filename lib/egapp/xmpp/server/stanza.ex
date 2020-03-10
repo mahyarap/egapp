@@ -31,11 +31,15 @@ defmodule Egapp.XMPP.Server.Stanza do
   end
 
   def iq(%{"type" => "get"} = attrs, {"vCard", child_attrs, child_data}, state) do
-    content = Element.vcard(child_attrs, child_data, state)
-
     resp =
-      iq_template(build_iq_attrs(attrs, 'result', state), content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
+      Element.vcard(child_attrs, child_data, state)
+      |> Enum.map(fn {conn, content} ->
+        resp =
+          iq_template(build_iq_attrs(attrs, 'result', state), content)
+          |> :xmerl.export_simple_element(:xmerl_xml)
+
+        {conn, resp}
+      end)
 
     {:ok, resp}
   end
