@@ -12,7 +12,8 @@ defmodule Egapp.XMPP.Server.Element do
       |> Enum.filter(fn cat -> cat.address() != Egapp.XMPP.Server.address() end)
       |> Enum.map(fn cat -> Element.item([jid: cat.address()], []) end)
 
-    query_template([xmlns: Const.xmlns_disco_items()], content)
+    resp = query_template([xmlns: Const.xmlns_disco_items()], content)
+    [{state.to, resp}]
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
@@ -22,7 +23,8 @@ defmodule Egapp.XMPP.Server.Element do
       |> Enum.map(fn cat -> [cat.identity() | cat.features()] end)
       |> Kernel.hd()
 
-    query_template([xmlns: Const.xmlns_disco_info()], content)
+    resp = query_template([xmlns: Const.xmlns_disco_info()], content)
+    [{state.to, resp}]
   end
 
   @doc """
@@ -51,7 +53,8 @@ defmodule Egapp.XMPP.Server.Element do
         Element.item(attrs, [])
       end)
 
-    query_template([xmlns: Const.xmlns_roster()], items)
+    resp = query_template([xmlns: Const.xmlns_roster()], items)
+    [{state.to, resp}]
   end
 
   def query(
@@ -121,13 +124,14 @@ defmodule Egapp.XMPP.Server.Element do
     query_template([xmlns: Const.xmlns_disco_info()], content)
   end
 
-  def query(%{"xmlns" => Const.xmlns_version()}, _data, _state) do
+  def query(%{"xmlns" => Const.xmlns_version()}, _data, state) do
     content = [
       {:name, ['egapp']},
       {:version, ['1.0.0']}
     ]
 
-    query_template([xmlns: Const.xmlns_version()], content)
+    resp = query_template([xmlns: Const.xmlns_version()], content)
+    [{state.to, resp}]
   end
 
   def query(%{"xmlns" => Const.xmlns_last()}, _data, _state) do

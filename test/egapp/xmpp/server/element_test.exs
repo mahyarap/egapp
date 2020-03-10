@@ -10,14 +10,19 @@ defmodule Egapp.XMPP.Server.ElementTest do
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
+
+    {:ok, state: %{to: self(), client: %{}}}
   end
 
-  test "disco items" do
+  defp extract_resp([{_conn, resp}]), do: resp
+
+  test "disco items", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_disco_items()}
-    state = %{cats: [Egapp.XMPP.Server, Egapp.XMPP.Conference]}
+    state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
 
     result =
       Element.query(attrs, nil, state)
+      |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
     
@@ -26,12 +31,13 @@ defmodule Egapp.XMPP.Server.ElementTest do
     assert result =~ ~s(<item)
   end
 
-  test "disco info for server" do
+  test "disco info for server", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_disco_info()}
-    state = %{cats: [Egapp.XMPP.Server]}
+    state = Map.put(state, :cats, [Egapp.XMPP.Server])
 
     result =
       Element.query(attrs, nil, state)
+      |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
 
@@ -43,7 +49,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     assert result =~ ~s(<feature)
   end
 
-  test "getting roster when contact exists" do
+  test "getting roster when contact exists", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_roster()}
 
     user1 = Egapp.Repo.insert!(%User{username: "foo"})
@@ -52,10 +58,11 @@ defmodule Egapp.XMPP.Server.ElementTest do
     %Roster{user: user1, users: [user2]}
     |> Egapp.Repo.insert!()
 
-    state = %{client: %{id: user1.id}}
+    state = put_in(state, [:client, :id], user1.id)
 
     result =
       Element.query(attrs, [], state)
+      |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
 
@@ -67,7 +74,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     assert result =~ ~s(jid="#{Jid.bare_jid(jid)}")
   end
 
-  test "getting roster with no contacts" do
+  test "getting roster with no contacts", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_roster()}
 
     user1 = Egapp.Repo.insert!(%User{username: "foo"})
@@ -75,10 +82,11 @@ defmodule Egapp.XMPP.Server.ElementTest do
     %Roster{user: user1, users: []}
     |> Egapp.Repo.insert!()
 
-    state = %{client: %{id: user1.id}}
+    state = put_in(state, [:client, :id], user1.id)
 
     result =
       Element.query(attrs, [], state)
+      |> extract_resp
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
 
