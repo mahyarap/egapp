@@ -6,13 +6,16 @@ defmodule Egapp.XMPP.Conference.Element do
   def query(
         %{"xmlns" => Const.xmlns_disco_info(), "node" => Const.xmlns_muc_traffic()},
         _data,
-        _state
+        state
       ) do
-    {
-      :error,
-      [type: 'cancel'],
-      [{:"service-unavailable", [xmlns: Const.xmlns_stanza()], []}]
-    }
+    resp =
+      {
+        :error,
+        [type: 'cancel'],
+        [{:"service-unavailable", [xmlns: Const.xmlns_stanza()], []}]
+      }
+
+    {state.to, resp}
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
