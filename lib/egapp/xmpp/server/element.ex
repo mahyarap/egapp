@@ -182,12 +182,14 @@ defmodule Egapp.XMPP.Server.Element do
     [{state.to, resp}]
   end
 
-  def ping(_attrs, _data, _state) do
-    {
+  def ping(_attrs, _data, state) do
+    resp = {
       :ping,
       [xmlns: Const.xmlns_ping()],
       []
     }
+
+    [{state.to, resp}]
   end
 
   def time(_attrs, _data, _state) do
