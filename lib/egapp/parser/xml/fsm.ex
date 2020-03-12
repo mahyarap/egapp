@@ -1,6 +1,8 @@
 defmodule Egapp.Parser.XML.FSM do
   require Logger
 
+  alias Egapp.Utils
+
   @behaviour :gen_fsm
 
   def child_spec(opts) do
@@ -73,7 +75,7 @@ defmodule Egapp.Parser.XML.FSM do
     )
 
     next_state =
-      case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), remove_whitespace(data)}) do
+      case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), Utils.remove_whitespace(data)}) do
         :reset ->
           :ok = Egapp.Parser.XML.reset(state.parser)
           :xml_stream_start
@@ -94,25 +96,6 @@ defmodule Egapp.Parser.XML.FSM do
   def xml_stream_element({:xmlstreamend, _tag_name}, state) do
     :gen_statem.call(state.xmpp_fsm, :end)
     {:stop, :normal, state}
-  end
-
-  defp remove_whitespace(data) do
-    do_remove_whitespace(data, [])
-  end
-
-  defp do_remove_whitespace([h | t], result) when is_list(h) do
-    do_remove_whitespace(t, [do_remove_whitespace(h, []) | result])
-  end
-
-  defp do_remove_whitespace([h | t], result) do
-    case h do
-      {:xmlcdata, "\n"} -> do_remove_whitespace(t, result)
-      _ -> do_remove_whitespace(t, [h | result])
-    end
-  end
-
-  defp do_remove_whitespace([], result) do
-    Enum.reverse(result)
   end
 
   defp to_map(attrs) do

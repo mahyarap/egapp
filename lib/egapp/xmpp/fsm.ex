@@ -1,4 +1,5 @@
 defmodule Egapp.XMPP.FSM do
+  alias Egapp.Utils
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Stanza
 
@@ -163,7 +164,7 @@ defmodule Egapp.XMPP.FSM do
     child_node =
       case data do
         [{:xmlel, tag_name, child_attrs, child_data}] ->
-          {tag_name, to_map(child_attrs), child_data}
+          {tag_name, to_map(child_attrs), Utils.remove_whitespace(child_data)}
       end
 
     {status, resp} = Stanza.iq(attrs, child_node, state)
