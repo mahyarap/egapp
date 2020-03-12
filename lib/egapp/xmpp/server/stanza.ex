@@ -75,11 +75,15 @@ defmodule Egapp.XMPP.Server.Stanza do
           {tag_name, to_map(child_attrs), child_data}
       end
 
-    content = Element.query(child_attrs, child_data, state)
-
     resp =
-      iq_template(build_iq_attrs(attrs, 'result', state), content)
-      |> :xmerl.export_simple_element(:xmerl_xml)
+      Element.query(child_attrs, child_data, state)
+      |> Enum.map(fn {conn, content} ->
+        resp =
+          iq_template(build_iq_attrs(attrs, 'result', state), content)
+          |> :xmerl.export_simple_element(:xmerl_xml)
+
+        {conn, resp}
+      end)
 
     {:ok, resp}
   end
