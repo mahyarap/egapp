@@ -27,7 +27,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
       |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
-    
+
     assert result =~ ~s(<query)
     assert result =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
     assert result =~ ~s(<item)

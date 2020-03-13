@@ -23,5 +23,4 @@ defmodule Egapp.Utils do
   defp do_remove_whitespace([], result) do
     Enum.reverse(result)
   end
-
 end

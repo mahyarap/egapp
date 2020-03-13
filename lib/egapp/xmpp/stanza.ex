@@ -11,7 +11,8 @@ defmodule Egapp.XMPP.Stanza do
 
   @iq_types ["get", "set", "result", "error"]
 
-  def iq(%{"to" => to, "type" => type} = attrs, data, state) when is_map_key(attrs, "id") and type in @iq_types do
+  def iq(%{"to" => to, "type" => type} = attrs, data, state)
+      when is_map_key(attrs, "id") and type in @iq_types do
     case Jid.partial_parse(to) do
       %Jid{domainpart: "egapp.im"} ->
         Egapp.XMPP.Server.Stanza.iq(attrs, data, state)
@@ -21,7 +22,8 @@ defmodule Egapp.XMPP.Stanza do
     end
   end
 
-  def iq(%{"type" => type} = attrs, data, state) when is_map_key(attrs, "id") and type in @iq_types do
+  def iq(%{"type" => type} = attrs, data, state)
+      when is_map_key(attrs, "id") and type in @iq_types do
     Egapp.XMPP.Server.Stanza.iq(attrs, data, state)
   end
 

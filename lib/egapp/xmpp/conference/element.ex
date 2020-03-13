@@ -8,12 +8,11 @@ defmodule Egapp.XMPP.Conference.Element do
         _data,
         state
       ) do
-    resp =
-      {
-        :error,
-        [type: 'cancel'],
-        [{:"service-unavailable", [xmlns: Const.xmlns_stanza()], []}]
-      }
+    resp = {
+      :error,
+      [type: 'cancel'],
+      [{:"service-unavailable", [xmlns: Const.xmlns_stanza()], []}]
+    }
 
     {state.to, resp}
   end

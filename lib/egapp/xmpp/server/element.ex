@@ -210,6 +210,7 @@ defmodule Egapp.XMPP.Server.Element do
         {:utc, [String.to_charlist(iso_time)]}
       ]
     }
+
     {:ok, [{state.to, resp}]}
   end
 end

@@ -141,6 +141,7 @@ defmodule Egapp.XMPP.FSM do
   def bind({:call, from}, {"iq", attrs, [{:xmlel, "bind", child_attrs, child_data}]}, state) do
     child_node = {"bind", to_map(child_attrs), child_data}
     {status, resp} = Stanza.iq(attrs, child_node, state)
+
     Enum.each(resp, fn {conn, content} ->
       apply(state.mod, :send, [conn, content])
     end)
@@ -170,6 +171,7 @@ defmodule Egapp.XMPP.FSM do
       end
 
     {status, resp} = Stanza.iq(attrs, child_node, state)
+
     Enum.each(resp, fn {conn, content} ->
       apply(state.mod, :send, [conn, content])
     end)
@@ -185,6 +187,7 @@ defmodule Egapp.XMPP.FSM do
     |> Enum.each(fn {conn, resp} ->
       apply(state.mod, :send, [conn, resp])
     end)
+
     {:next_state, :stanza, state, {:reply, from, :continue}}
   end
 

@@ -8,7 +8,7 @@ defmodule Egapp.XMPP.Server.Stanza do
       build_iq_attrs: 3,
       message_template: 2,
       presence_template: 2,
-      build_message_attrs: 2,
+      build_message_attrs: 2
     ]
 
   alias Egapp.Config
@@ -199,7 +199,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     |> Enum.map(fn contact ->
       jid = %Jid{
         localpart: contact.username,
-        domainpart: Config.get(:domain_name),
+        domainpart: Config.get(:domain_name)
       }
 
       {contact, JidConnRegistry.match(Jid.bare_jid(jid))}
@@ -238,7 +238,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     |> Enum.map(fn contact ->
       jid = %Jid{
         localpart: contact.username,
-        domainpart: Config.get(:domain_name),
+        domainpart: Config.get(:domain_name)
       }
 
       Jid.bare_jid(jid)
@@ -264,7 +264,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     |> Enum.map(fn contact ->
       jid = %Jid{
         localpart: contact.username,
-        domainpart: Config.get(:domain_name),
+        domainpart: Config.get(:domain_name)
       }
 
       Jid.bare_jid(jid)

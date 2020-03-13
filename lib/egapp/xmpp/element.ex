@@ -130,7 +130,7 @@ defmodule Egapp.XMPP.Element do
     {:error, [type: Atom.to_charlist(type)], [err, desc]}
   end
 
-  defp error_desc(desc), do: {:text, [xmlns: Const.xmlns_stanza], [String.to_charlist(desc)]}
+  defp error_desc(desc), do: {:text, [xmlns: Const.xmlns_stanza()], [String.to_charlist(desc)]}
 
-  defp error_template(element), do: {element, [xmlns: Const.xmlns_stanza], []}
+  defp error_template(element), do: {element, [xmlns: Const.xmlns_stanza()], []}
 end
