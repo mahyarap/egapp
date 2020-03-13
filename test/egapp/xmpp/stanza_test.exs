@@ -223,4 +223,37 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(<active)
     assert resp =~ ~s(xmlns="#{Const.xmlns_chatstates()}")
   end
+
+  test "returns stream error with no iq type", %{state: state} do
+    attrs = %{"id" => state.id}
+    child = {"ping", %{"xmlns" => Const.xmlns_ping()}, []}
+
+    assert {:error, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<stream:error)
+    assert resp =~ ~s(<invalid-xml)
+  end
+
+  test "returns stream error with no iq id", %{state: state} do
+    attrs = %{"type" => "foo"}
+    child = {"ping", %{"xmlns" => Const.xmlns_ping()}, []}
+
+    assert {:error, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<stream:error)
+    assert resp =~ ~s(<invalid-xml)
+  end
+
+  test "returns stream error with invalid iq type", %{state: state} do
+    attrs = %{"type" => "foo", "id" => state.id}
+    child = {"ping", %{"xmlns" => Const.xmlns_ping()}, []}
+
+    assert {:error, resp} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<stream:error)
+    assert resp =~ ~s(<invalid-xml)
+  end
 end

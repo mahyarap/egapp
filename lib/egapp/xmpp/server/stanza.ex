@@ -112,11 +112,6 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => _type} = attrs, _data, state) do
-    resp = Egapp.XMPP.Stream.error(:invalid_xml, attrs, state)
-    {:error, resp}
-  end
-
   def message(%{"to" => to} = attrs, children, state) do
     {_, conn} =
       to

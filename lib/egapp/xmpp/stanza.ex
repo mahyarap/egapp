@@ -7,8 +7,11 @@ defmodule Egapp.XMPP.Stanza do
   """
   alias Egapp.Config
   alias Egapp.XMPP.Jid
+  alias Egapp.XMPP.Stream
 
-  def iq(%{"to" => to} = attrs, data, state) do
+  @iq_types ["get", "set", "result", "error"]
+
+  def iq(%{"to" => to, "type" => type} = attrs, data, state) when is_map_key(attrs, "id") and type in @iq_types do
     case Jid.partial_parse(to) do
       %Jid{domainpart: "egapp.im"} ->
         Egapp.XMPP.Server.Stanza.iq(attrs, data, state)
@@ -18,8 +21,12 @@ defmodule Egapp.XMPP.Stanza do
     end
   end
 
-  def iq(attrs, data, state) do
+  def iq(%{"type" => type} = attrs, data, state) when is_map_key(attrs, "id") and type in @iq_types do
     Egapp.XMPP.Server.Stanza.iq(attrs, data, state)
+  end
+
+  def iq(attrs, _data, state) do
+    {:error, Stream.error(:invalid_xml, attrs, state)}
   end
 
   def iq_template(%{id: id, type: type, from: from}, content) do

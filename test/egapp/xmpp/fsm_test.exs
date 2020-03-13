@@ -157,7 +157,7 @@ defmodule Egapp.XMPP.FSMTest do
       {:bind, put_in(data, [:client, :jid], jid)}
     end)
 
-    attrs = %{"type" => "set"}
+    attrs = %{"type" => "set", "id" => "abc"}
     data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
 
     assert :continue = :gen_statem.call(fsm, {"iq", attrs, data})
