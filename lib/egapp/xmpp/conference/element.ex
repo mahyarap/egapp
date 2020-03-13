@@ -14,7 +14,7 @@ defmodule Egapp.XMPP.Conference.Element do
       [{:"service-unavailable", [xmlns: Const.xmlns_stanza()], []}]
     }
 
-    {state.to, resp}
+    {:ok, [{state.to, resp}]}
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
