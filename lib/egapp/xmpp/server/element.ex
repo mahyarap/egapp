@@ -138,6 +138,10 @@ defmodule Egapp.XMPP.Server.Element do
     query_template([xmlns: Const.xmlns_last()], [])
   end
 
+  def query(%{"xmlns" => _xmlns}, _data, state) do
+    {:error, [{state.to, Egapp.XMPP.Element.feature_not_implemented_error(:cancel)}]}
+  end
+
   def query_template(attrs, content), do: {:query, attrs, content}
 
   @doc """
