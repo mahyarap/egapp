@@ -161,7 +161,7 @@ defmodule Egapp.XMPP.FSMTest do
     data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
 
     assert :continue = :gen_statem.call(fsm, {"iq", attrs, data})
-    assert_received resp
+    assert_received [{_, resp}]
     resp = IO.chardata_to_string(resp)
     assert resp =~ "<bind"
     assert resp =~ "<jid"

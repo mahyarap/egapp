@@ -42,6 +42,12 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def build_iq_attrs(attrs, type, state) do
+    type =
+      case type do
+        :ok -> 'result'
+        :error -> 'error'
+      end
+
     %{
       lang: Map.get(state.client, "xml:lang", "en"),
       id: Map.get(attrs, "id"),

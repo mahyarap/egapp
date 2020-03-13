@@ -13,7 +13,7 @@ defmodule Egapp.XMPP.Server.Element do
       |> Enum.map(fn cat -> Element.item([jid: cat.address()], []) end)
 
     resp = query_template([xmlns: Const.xmlns_disco_items()], content)
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
@@ -24,7 +24,7 @@ defmodule Egapp.XMPP.Server.Element do
       |> Kernel.hd()
 
     resp = query_template([xmlns: Const.xmlns_disco_info()], content)
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 
   @doc """
@@ -54,7 +54,7 @@ defmodule Egapp.XMPP.Server.Element do
       end)
 
     resp = query_template([xmlns: Const.xmlns_roster()], items)
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 
   def query(
@@ -131,7 +131,7 @@ defmodule Egapp.XMPP.Server.Element do
     ]
 
     resp = query_template([xmlns: Const.xmlns_version()], content)
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 
   def query(%{"xmlns" => Const.xmlns_last()}, _data, _state) do
@@ -147,14 +147,16 @@ defmodule Egapp.XMPP.Server.Element do
   def bind(_attrs, _data, state) do
     full_jid = Jid.full_jid(state.client.jid) |> String.to_charlist()
 
-    {
+    resp = {
       :bind,
       [xmlns: Const.xmlns_bind()],
       [{:jid, [], [full_jid]}]
     }
+
+    {:ok, [{state.to, resp}]}
   end
 
-  def bind() do
+  def bind do
     {
       :bind,
       [xmlns: Const.xmlns_bind()],
@@ -162,7 +164,7 @@ defmodule Egapp.XMPP.Server.Element do
     }
   end
 
-  def session(_attrs, _data, state), do: [{state.to, []}]
+  def session(_attrs, _data, state), do: {:ok, [{state.to, []}]}
 
   def session do
     {
@@ -179,7 +181,7 @@ defmodule Egapp.XMPP.Server.Element do
       []
     }
 
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 
   def ping(_attrs, _data, state) do
@@ -192,11 +194,11 @@ defmodule Egapp.XMPP.Server.Element do
     [{state.to, resp}]
   end
 
-  def time(_attrs, _data, _state) do
+  def time(_attrs, _data, state) do
     {:ok, now} = DateTime.now("Etc/UTC")
     iso_time = DateTime.to_iso8601(now)
 
-    {
+    resp = {
       :time,
       [xmlns: Const.xmlns_time()],
       [
@@ -204,5 +206,6 @@ defmodule Egapp.XMPP.Server.Element do
         {:utc, [String.to_charlist(iso_time)]}
       ]
     }
+    {:ok, [{state.to, resp}]}
   end
 end

@@ -26,6 +26,6 @@ defmodule Egapp.XMPP.Conference.Element do
       |> hd()
 
     resp = Element.query_template([xmlns: Const.xmlns_disco_info()], content)
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 end

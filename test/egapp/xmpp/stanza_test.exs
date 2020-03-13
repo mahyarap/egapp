@@ -28,7 +28,7 @@ defmodule Egapp.XMPP.StanzaTest do
     jid = %Jid{localpart: "foo", domainpart: "bar", resourcepart: "123"}
     state = put_in(state, [:client, :jid], jid)
 
-    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)
@@ -97,7 +97,7 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"type" => "get", "id" => state.id, "to" => "conference.egapp.im"}
     child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
     state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
-    assert {:ok, [{_, resp} ]}= Stanza.iq(attrs, child, state)
+    assert {:ok, [{_, resp} ]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)
@@ -154,7 +154,7 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"type" => "get", "id" => state.id}
     child = {"time", %{"xmlns" => Const.xmlns_time()}, []}
     state = put_in(state, [:client, :id], 1)
-    assert {:ok, resp} = Stanza.iq(attrs, child, state)
+    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<iq)

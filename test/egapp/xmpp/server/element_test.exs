@@ -20,8 +20,10 @@ defmodule Egapp.XMPP.Server.ElementTest do
     attrs = %{"xmlns" => Const.xmlns_disco_items()}
     state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
 
+    assert {:ok, result} = Element.query(attrs, nil, state)
+
     result =
-      Element.query(attrs, nil, state)
+      result
       |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
@@ -35,8 +37,10 @@ defmodule Egapp.XMPP.Server.ElementTest do
     attrs = %{"xmlns" => Const.xmlns_disco_info()}
     state = Map.put(state, :cats, [Egapp.XMPP.Server])
 
+    assert {:ok, result} = Element.query(attrs, nil, state)
+
     result =
-      Element.query(attrs, nil, state)
+      result
       |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
@@ -60,8 +64,10 @@ defmodule Egapp.XMPP.Server.ElementTest do
 
     state = put_in(state, [:client, :id], user1.id)
 
+    assert {:ok, result} = Element.query(attrs, [], state)
+
     result =
-      Element.query(attrs, [], state)
+      result
       |> extract_resp()
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()
@@ -83,9 +89,10 @@ defmodule Egapp.XMPP.Server.ElementTest do
     |> Egapp.Repo.insert!()
 
     state = put_in(state, [:client, :id], user1.id)
+    assert {:ok, result} = Element.query(attrs, [], state)
 
     result =
-      Element.query(attrs, [], state)
+      result
       |> extract_resp
       |> :xmerl.export_simple_element(:xmerl_xml)
       |> IO.chardata_to_string()

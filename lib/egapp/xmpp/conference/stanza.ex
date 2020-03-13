@@ -4,11 +4,13 @@ defmodule Egapp.XMPP.Conference.Stanza do
   alias Egapp.XMPP.Conference.Element
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
+    {status, result} = Element.query(child_attrs, child_data, state)
+
     resp =
-      Element.query(child_attrs, child_data, state)
+      result
       |> Enum.map(fn {conn, content} ->
         resp =
-          iq_template(build_iq_attrs(attrs, 'result', state), content)
+          iq_template(build_iq_attrs(attrs, status, state), content)
           |> :xmerl.export_simple_element(:xmerl_xml)
 
         {conn, resp}
