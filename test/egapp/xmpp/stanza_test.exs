@@ -229,7 +229,7 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"id" => state.id}
     child = {"ping", %{"xmlns" => Const.xmlns_ping()}, []}
 
-    assert {:error, resp} = Stanza.iq(attrs, child, state)
+    assert {:error, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<stream:error)
@@ -240,7 +240,7 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"type" => "foo"}
     child = {"ping", %{"xmlns" => Const.xmlns_ping()}, []}
 
-    assert {:error, resp} = Stanza.iq(attrs, child, state)
+    assert {:error, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<stream:error)
@@ -251,7 +251,7 @@ defmodule Egapp.XMPP.StanzaTest do
     attrs = %{"type" => "foo", "id" => state.id}
     child = {"ping", %{"xmlns" => Const.xmlns_ping()}, []}
 
-    assert {:error, resp} = Stanza.iq(attrs, child, state)
+    assert {:error, [{_, resp}]} = Stanza.iq(attrs, child, state)
     resp = IO.chardata_to_string(resp)
 
     assert resp =~ ~s(<stream:error)
