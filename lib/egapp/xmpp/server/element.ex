@@ -195,7 +195,7 @@ defmodule Egapp.XMPP.Server.Element do
       []
     }
 
-    [{state.to, resp}]
+    {:ok, [{state.to, resp}]}
   end
 
   def time(_attrs, _data, state) do
