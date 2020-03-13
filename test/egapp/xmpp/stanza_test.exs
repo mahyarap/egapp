@@ -256,4 +256,16 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(<stream:error)
     assert resp =~ ~s(<invalid-xml)
   end
+
+  test "returns error with invalid request in iq stanza", %{state: state} do
+    attrs = %{"type" => "get", "id" => state.id}
+    child = {"foo", %{"xmlns" => "bar"}, []}
+
+    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+    resp = IO.chardata_to_string(resp)
+
+    assert resp =~ ~s(<iq)
+    assert resp =~ ~s(<bad-request)
+    assert resp =~ ~s(<text)
+  end
 end

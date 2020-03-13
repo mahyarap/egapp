@@ -112,6 +112,20 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, resp}
   end
 
+  def iq(attrs, {element, _child_attrs, _child_data}, state) do
+    resp =
+      [{state.to, Egapp.XMPP.Element.bad_request_error(:modify, "unknown element: #{element}")}]
+      |> Enum.map(fn {conn, content} ->
+        resp =
+          iq_template(build_iq_attrs(attrs, 'error', state), content)
+          |> :xmerl.export_simple_element(:xmerl_xml)
+
+        {conn, resp}
+      end)
+
+    {:ok, resp}
+  end
+
   def message(%{"to" => to} = attrs, children, state) do
     {_, conn} =
       to

@@ -116,4 +116,17 @@ defmodule Egapp.XMPP.Element do
   def identity(category, type), do: {:identity, [category: category, type: type], []}
 
   def item(attrs, content), do: {:item, attrs, content}
+
+  def bad_request_error(type, desc \\ nil) do
+    error(type, error_template(:"bad-request"), desc)
+  end
+
+  defp error(type, err, desc) do
+    desc = if desc, do: error_desc(desc), else: []
+    {:error, [type: Atom.to_charlist(type)], [err, desc]}
+  end
+
+  defp error_desc(desc), do: {:text, [xmlns: Const.xmlns_stanza], [String.to_charlist(desc)]}
+
+  defp error_template(element), do: {element, [xmlns: Const.xmlns_stanza], []}
 end
