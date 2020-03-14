@@ -228,13 +228,14 @@ defmodule Egapp.XMPP.Server.Stanza do
       |> Egapp.Repo.one()
       |> Egapp.Repo.preload(:users)
 
+    presence_to_contacts = create_contact_presence(roster.users, state)
+    presence_to_resources = create_resource_presence(state.client.jid)
     presence_probes = create_presence_probe(roster.users, state)
-    initial_presences = create_initial_presence(roster.users, state)
-    presence_probes ++ initial_presences
+    presence_to_contacts ++ presence_to_resources ++ presence_probes
   end
 
-  defp create_initial_presence(users, state) do
-    users
+  defp create_contact_presence(contacts, state) do
+    contacts
     |> Enum.map(fn contact ->
       jid = %Jid{
         localpart: contact.username,
@@ -245,10 +246,10 @@ defmodule Egapp.XMPP.Server.Stanza do
       |> JidConnRegistry.match()
     end)
     |> List.flatten()
-    |> Enum.map(fn {jid, conn} ->
+    |> Enum.map(fn {contact_jid, conn} ->
       attrs = %{
         from: Jid.full_jid(state.client.jid),
-        to: Jid.bare_jid(jid)
+        to: Jid.bare_jid(contact_jid)
       }
 
       resp =
@@ -259,8 +260,8 @@ defmodule Egapp.XMPP.Server.Stanza do
     end)
   end
 
-  defp create_presence_probe(users, state) do
-    users
+  defp create_presence_probe(contacts, state) do
+    contacts
     |> Enum.map(fn contact ->
       jid = %Jid{
         localpart: contact.username,
@@ -282,6 +283,24 @@ defmodule Egapp.XMPP.Server.Stanza do
         |> :xmerl.export_simple_element(:xmerl_xml)
 
       {state.to, resp}
+    end)
+  end
+
+  defp create_resource_presence(user_jid) do
+    Jid.bare_jid(user_jid)
+    |> JidConnRegistry.match()
+    |> List.flatten()
+    |> Enum.map(fn {_resource, conn} ->
+      attrs = %{
+        from: Jid.full_jid(user_jid),
+        to: Jid.bare_jid(user_jid)
+      }
+
+      resp =
+        presence_template(attrs, [])
+        |> :xmerl.export_simple_element(:xmerl_xml)
+
+      {conn, resp}
     end)
   end
 
