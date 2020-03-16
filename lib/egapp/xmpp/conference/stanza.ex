@@ -1,10 +1,10 @@
 defmodule Egapp.XMPP.Conference.Stanza do
   import Egapp.XMPP.Stanza, only: [iq_template: 2, build_iq_attrs: 3]
 
-  alias Egapp.XMPP.Conference.Element
+  alias Egapp.XMPP.Conference.Query
 
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
-    {status, result} = Element.query(child_attrs, child_data, state)
+    {status, result} = Query.query(child_attrs, child_data, state)
 
     resp =
       result

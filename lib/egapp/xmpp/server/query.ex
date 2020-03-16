@@ -1,4 +1,4 @@
-defmodule Egapp.XMPP.Server.Element do
+defmodule Egapp.XMPP.Server.Query do
   require Ecto.Query
   require Egapp.Constants, as: Const
 
@@ -143,74 +143,4 @@ defmodule Egapp.XMPP.Server.Element do
   end
 
   def query_template(attrs, content), do: {:query, attrs, content}
-
-  @doc """
-  RFC6120 7.4
-  RFC6120 7.6.1
-  """
-  def bind(_attrs, _data, state) do
-    full_jid = Jid.full_jid(state.client.jid) |> String.to_charlist()
-
-    resp = {
-      :bind,
-      [xmlns: Const.xmlns_bind()],
-      [{:jid, [], [full_jid]}]
-    }
-
-    {:ok, [{state.to, resp}]}
-  end
-
-  def bind do
-    {
-      :bind,
-      [xmlns: Const.xmlns_bind()],
-      []
-    }
-  end
-
-  def session(_attrs, _data, state), do: {:ok, [{state.to, []}]}
-
-  def session do
-    {
-      :session,
-      [xmlns: Const.xmlns_session()],
-      []
-    }
-  end
-
-  def vcard(_attrs, _data, state) do
-    resp = {
-      :vCard,
-      [xmlns: Const.xmlns_vcard()],
-      []
-    }
-
-    {:ok, [{state.to, resp}]}
-  end
-
-  def ping(_attrs, _data, state) do
-    resp = {
-      :ping,
-      [xmlns: Const.xmlns_ping()],
-      []
-    }
-
-    {:ok, [{state.to, resp}]}
-  end
-
-  def time(_attrs, _data, state) do
-    {:ok, now} = DateTime.now("Etc/UTC")
-    iso_time = DateTime.to_iso8601(now)
-
-    resp = {
-      :time,
-      [xmlns: Const.xmlns_time()],
-      [
-        {:tzo, ['+00:00']},
-        {:utc, [String.to_charlist(iso_time)]}
-      ]
-    }
-
-    {:ok, [{state.to, resp}]}
-  end
 end

@@ -1,4 +1,4 @@
-defmodule Egapp.XMPP.Conference.Element do
+defmodule Egapp.XMPP.Conference.Query do
   require Egapp.Constants, as: Const
 
   alias Egapp.XMPP.Element

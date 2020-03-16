@@ -1,30 +1,18 @@
 defmodule Egapp.XMPP.Element do
-  require Ecto.Query
   require Egapp.Constants, as: Const
-
-  alias Egapp.XMPP.Jid
 
   @doc """
   RFC6120 4.3.2
   """
-  def features(content) do
-    {
-      :"stream:features",
-      content
-    }
-  end
+  def features(content), do: {:"stream:features", content}
 
   @doc """
   RFC6120 7.4
   RFC6120 7.6.1
   """
-  def bind(attrs, data, state) do
-    Egapp.XMPP.Server.Element.bind(attrs, data, state)
-  end
+  def bind(content), do: {:bind, [xmlns: Const.xmlns_bind()], [content]}
 
-  def bind() do
-    Egapp.XMPP.Server.Element.bind()
-  end
+  def bind, do: {:bind, [xmlns: Const.xmlns_bind()], []}
 
   @doc """
   RFC6120 6.3.3
@@ -53,62 +41,20 @@ defmodule Egapp.XMPP.Element do
     }
   end
 
-  def success do
-    {
-      :success,
-      [xmlns: Const.xmlns_sasl()],
-      []
-    }
-  end
+  def success, do: {:success, [xmlns: Const.xmlns_sasl()], []}
 
-  def failure(reason) do
-    {
-      :failure,
-      [xmlns: Const.xmlns_sasl()],
-      [reason]
-    }
-  end
+  def failure(reason), do: {:failure, [xmlns: Const.xmlns_sasl()], [reason]}
 
-  @doc """
-  RFC3921 3
-  """
-  def session(attrs, data, state) do
-    Egapp.XMPP.Server.Element.session(attrs, data, state)
-  end
-
-  def session do
-    Egapp.XMPP.Server.Element.session()
-  end
-
-  def query(%{"to" => to} = attrs, data, state) do
-    case Jid.partial_parse(to) do
-      %Jid{domainpart: "egapp.im"} ->
-        Egapp.XMPP.Server.Element.query(attrs, data, state)
-
-      %Jid{domainpart: "conference.egapp.im"} ->
-        Egapp.XMPP.Conference.Element.query(attrs, data, state)
-
-      _ ->
-        raise "should not get here"
-    end
-  end
-
-  def query(attrs, data, state) do
-    Egapp.XMPP.Server.Element.query(attrs, data, state)
-  end
+  def session, do: {:session, [xmlns: Const.xmlns_session()], []}
 
   def query_template(attrs, content), do: {:query, attrs, content}
 
-  def vcard(%{"xmlns" => Const.xmlns_vcard()} = attrs, data, state) do
-    Egapp.XMPP.Server.Element.vcard(attrs, data, state)
-  end
+  def vcard, do: {:vCard, [xmlns: Const.xmlns_vcard()], []}
 
-  def ping(%{"xmlns" => Const.xmlns_ping()} = attrs, data, state) do
-    Egapp.XMPP.Server.Element.ping(attrs, data, state)
-  end
+  def ping, do: {:ping, [xmlns: Const.xmlns_ping()], []}
 
-  def time(%{"xmlns" => Const.xmlns_time()} = attrs, data, state) do
-    Egapp.XMPP.Server.Element.time(attrs, data, state)
+  def time(timezone, time) do
+    {:time, [xmlns: Const.xmlns_time()], [{:tzo, [timezone]}, {:utc, [time]}]}
   end
 
   def feature(xmlns), do: {:feature, [var: xmlns], []}
@@ -116,6 +62,8 @@ defmodule Egapp.XMPP.Element do
   def identity(category, type), do: {:identity, [category: category, type: type], []}
 
   def item(attrs, content), do: {:item, attrs, content}
+
+  def jid(content), do: {:jid, [], [content]}
 
   def bad_request_error(type, desc \\ nil) do
     error(type, error_template(:"bad-request"), desc)

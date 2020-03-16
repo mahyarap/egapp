@@ -1,4 +1,4 @@
-defmodule Egapp.XMPP.Server.ElementTest do
+defmodule Egapp.XMPP.Server.QueryTest do
   use ExUnit.Case, async: true
 
   require Ecto.Query
@@ -6,7 +6,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
 
   alias Egapp.XMPP.Jid
   alias Egapp.Repo.{User, Roster}
-  alias Egapp.XMPP.Server.Element
+  alias Egapp.XMPP.Server.Query
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Egapp.Repo)
@@ -20,7 +20,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     attrs = %{"xmlns" => Const.xmlns_disco_items()}
     state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
 
-    assert {:ok, result} = Element.query(attrs, nil, state)
+    assert {:ok, result} = Query.query(attrs, nil, state)
 
     result =
       result
@@ -37,7 +37,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     attrs = %{"xmlns" => Const.xmlns_disco_info()}
     state = Map.put(state, :cats, [Egapp.XMPP.Server])
 
-    assert {:ok, result} = Element.query(attrs, nil, state)
+    assert {:ok, result} = Query.query(attrs, nil, state)
 
     result =
       result
@@ -64,7 +64,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
 
     state = put_in(state, [:client, :id], user1.id)
 
-    assert {:ok, result} = Element.query(attrs, [], state)
+    assert {:ok, result} = Query.query(attrs, [], state)
 
     result =
       result
@@ -89,7 +89,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     |> Egapp.Repo.insert!()
 
     state = put_in(state, [:client, :id], user1.id)
-    assert {:ok, result} = Element.query(attrs, [], state)
+    assert {:ok, result} = Query.query(attrs, [], state)
 
     result =
       result
@@ -124,7 +124,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     roster = query |> Egapp.Repo.one()
     assert [] = roster.users
 
-    result = Element.query(attrs, data, state)
+    result = Query.query(attrs, data, state)
     assert [] = result
 
     roster = query |> Egapp.Repo.one()
@@ -154,7 +154,7 @@ defmodule Egapp.XMPP.Server.ElementTest do
     roster = query |> Egapp.Repo.one()
     assert [%Egapp.Repo.User{username: "bar"}] = roster.users
 
-    result = Element.query(attrs, data, state)
+    result = Query.query(attrs, data, state)
     assert [] = result
 
     roster = query |> Egapp.Repo.one()
