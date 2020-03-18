@@ -77,14 +77,8 @@ defmodule Egapp.XMPP.Stanza do
     {:message, iq_attrs, data}
   end
 
-  def presence(%{"to" => to} = attrs, child, state) do
-    case Jid.parse(to) do
-      %Jid{domainpart: "conference.egapp.im"} ->
-        Egapp.XMPP.Conference.Stanza.presence(attrs, child, state)
-
-      "egapp.im" ->
-        Egapp.XMPP.Server.Stanza.presence(attrs, child, state)
-    end
+  def presence(attrs, child, state) when is_map_key(attrs, "to") do
+    do_stanza(:presence, attrs, child, state)
   end
 
   def presence(attrs, child, state) when not is_map_key(attrs, "to") do
@@ -108,8 +102,16 @@ defmodule Egapp.XMPP.Stanza do
     result =
       services
       |> Enum.filter(fn mod ->
-        to_domainpart = Jid.partial_parse(to) |> Map.fetch!(:domainpart)
-        mod_domainpart = Jid.partial_parse(mod.address()) |> Map.fetch!(:domainpart)
+        to_domainpart =
+          to
+          |> Jid.partial_parse()
+          |> Map.fetch!(:domainpart)
+
+        mod_domainpart =
+          mod.address()
+          |> Jid.partial_parse()
+          |> Map.fetch!(:domainpart)
+
         match?(^to_domainpart, mod_domainpart)
       end)
       |> Enum.map(fn mod -> mod.stanza_mod() end)
