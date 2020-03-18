@@ -19,4 +19,8 @@ defmodule Egapp.XMPP.Conference do
       Element.feature(Const.xmlns_muc())
     ]
   end
+
+  def stanza_mod do
+    Egapp.XMPP.Conference.Stanza
+  end
 end

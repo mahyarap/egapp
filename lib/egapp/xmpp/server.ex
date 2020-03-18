@@ -21,4 +21,8 @@ defmodule Egapp.XMPP.Server do
       Element.feature(Const.xmlns_last())
     ]
   end
+
+  def stanza_mod do
+    Egapp.XMPP.Server.Stanza
+  end
 end
