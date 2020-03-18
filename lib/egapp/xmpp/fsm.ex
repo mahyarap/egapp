@@ -178,7 +178,7 @@ defmodule Egapp.XMPP.FSM do
 
     case status do
       :ok -> {:next_state, :stanza, state, {:reply, from, :continue}}
-      :error -> {:stop, :normal, state, {:reply, from, :stop}}
+      :error -> {:stop_and_reply, :normal, {:reply, from, :stop}, state}
     end
   end
 
