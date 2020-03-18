@@ -8,17 +8,42 @@ defmodule Egapp.XMPP.Stanza do
   alias Egapp.Config
   alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Stream
+  alias Egapp.XMPP.Element
 
   @iq_types ["get", "set", "result", "error"]
 
   def iq(%{"to" => to, "type" => type} = attrs, data, state)
       when is_map_key(attrs, "id") and type in @iq_types do
-    case Jid.partial_parse(to) do
-      %Jid{domainpart: "egapp.im"} ->
-        Egapp.XMPP.Server.Stanza.iq(attrs, data, state)
+    services = Config.get(:services)
 
-      %Jid{domainpart: "conference.egapp.im"} ->
-        Egapp.XMPP.Conference.Stanza.iq(attrs, data, state)
+    services =
+      if Egapp.XMPP.Server not in services do
+        [Egapp.XMPP.Server | services]
+      else
+        services
+      end
+
+    result =
+      services
+      |> Enum.filter(fn mod ->
+        to_jid = Jid.partial_parse(to)
+        mod_jid = Jid.partial_parse(mod.address())
+        match?(^to_jid, mod_jid)
+      end)
+      |> Enum.map(fn mod -> mod.stanza_mod() end)
+
+    if length(result) == 1 do
+      result
+      |> hd()
+      |> apply(:iq, [attrs, data, state])
+    else
+      content = Element.service_unavailable_error(:cancel)
+
+      resp =
+        iq_template(build_iq_attrs(attrs, :error, state), content)
+        |> :xmerl.export_simple_element(:xmerl_xml)
+
+      {:ok, [{state.to, resp}]}
     end
   end
 

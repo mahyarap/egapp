@@ -73,6 +73,10 @@ defmodule Egapp.XMPP.Element do
     error(type, error_template(:"feature-not-implemeted"), desc)
   end
 
+  def service_unavailable_error(type, desc \\ nil) do
+    error(type, error_template(:"service-unavailable"), desc)
+  end
+
   defp error(type, err, desc) do
     desc = if desc, do: error_desc(desc), else: []
     {:error, [type: Atom.to_charlist(type)], [err, desc]}
