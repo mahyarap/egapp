@@ -54,61 +54,153 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(type="result")
   end
 
-  test "returns correct disco items", %{state: state} do
-    attrs = %{"type" => "get", "id" => state.id}
-    child = {"query", %{"xmlns" => Const.xmlns_disco_items()}, []}
-    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
-    resp = IO.chardata_to_string(resp)
+  describe "disco items" do
+    setup %{state: state} do
+      attrs = %{"type" => "get", "id" => state.id}
+      child = {"query", %{"xmlns" => Const.xmlns_disco_items()}, []}
+      services = Application.get_env(:egapp, :services)
 
-    assert resp =~ ~s(<iq)
-    assert resp =~ ~s(from="egapp.im")
-    assert resp =~ state.id
-    assert resp =~ ~s(type="result")
-    assert resp =~ ~s(query)
-    assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      on_exit(fn -> Application.put_env(:egapp, :services, services) end)
+
+      {:ok, attrs: attrs, child: child}
+    end
+
+    test "with empty services", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [])
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="result")
+      assert resp =~ ~s(query)
+      assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      refute resp =~ ~s(<item)
+    end
+
+    test "with just Conference as service", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [Egapp.XMPP.Conference])
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="result")
+      assert resp =~ ~s(query)
+      assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      assert resp =~ ~s(<item)
+      assert resp =~ ~s(jid="conference.egapp.im")
+    end
+
+    test "with Conference and Server services", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [Egapp.XMPP.Conference, Egapp.XMPP.Server])
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="result")
+      assert resp =~ ~s(query)
+      assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      assert resp =~ ~s(<item)
+      assert resp =~ ~s(jid="conference.egapp.im")
+      refute resp =~ ~s(jid="egapp.im")
+    end
   end
 
-  test "returns correct disco info for server category", %{state: state} do
-    attrs = %{"type" => "get", "id" => state.id, "to" => "egapp.im"}
-    child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
-    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
-    resp = IO.chardata_to_string(resp)
+  describe "disco info" do
+    setup %{state: state} do
+      attrs = %{"type" => "get", "id" => state.id}
+      child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
+      services = Application.get_env(:egapp, :services)
 
-    assert resp =~ ~s(<iq)
-    assert resp =~ ~s(from="egapp.im")
-    assert resp =~ state.id
-    assert resp =~ ~s(type="result")
-    assert resp =~ ~s(query)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
-    assert resp =~ ~s(<identity)
-    assert resp =~ ~s(type="im")
-    assert resp =~ ~s(category="server")
-    assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_ping()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_version()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_last()}")
-  end
+      on_exit(fn -> Application.put_env(:egapp, :services, services) end)
 
-  test "returns correct disco info for conference category", %{state: state} do
-    attrs = %{"type" => "get", "id" => state.id, "to" => "conference.egapp.im"}
-    child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
-    assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
-    resp = IO.chardata_to_string(resp)
+      {:ok, attrs: attrs, child: child}
+    end
 
-    assert resp =~ ~s(<iq)
-    assert resp =~ ~s(from="conference.egapp.im")
-    assert resp =~ state.id
-    assert resp =~ ~s(type="result")
-    assert resp =~ ~s(query)
-    assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
-    assert resp =~ ~s(<identity)
-    assert resp =~ ~s(type="text")
-    assert resp =~ ~s(category="conference")
-    assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
-    assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
+    test "for server with empty services", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [])
+      attrs = Map.put(attrs, "to", "egapp.im")
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="result")
+      assert resp =~ ~s(query)
+      assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
+      assert resp =~ ~s(<identity)
+      assert resp =~ ~s(type="im")
+      assert resp =~ ~s(category="server")
+      assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_ping()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_version()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_last()}")
+    end
+
+    test "for server with server included", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [Egapp.XMPP.Server])
+      attrs = Map.put(attrs, "to", "egapp.im")
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="result")
+      assert resp =~ ~s(query)
+      assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
+      assert resp =~ ~s(<identity)
+      assert resp =~ ~s(type="im")
+      assert resp =~ ~s(category="server")
+      assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_ping()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_version()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_last()}")
+    end
+
+    test "for conference with empty services", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [])
+      attrs = Map.put(attrs, "to", "conference.egapp.im")
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="conference.egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="error")
+      assert resp =~ ~s(<error)
+      assert resp =~ ~s(<service-unavailable)
+    end
+
+    test "for conference with conference included", %{attrs: attrs, child: child, state: state} do
+      Application.put_env(:egapp, :services, [Egapp.XMPP.Conference])
+      attrs = Map.put(attrs, "to", "conference.egapp.im")
+      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(from="conference.egapp.im")
+      assert resp =~ state.id
+      assert resp =~ ~s(type="result")
+      assert resp =~ ~s(query)
+      assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
+      assert resp =~ ~s(<identity)
+      assert resp =~ ~s(type="text")
+      assert resp =~ ~s(category="conference")
+      assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
+      assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
+    end
   end
 
   test "returns correct vcard", %{state: state} do
