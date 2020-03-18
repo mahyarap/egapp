@@ -4,12 +4,13 @@ defmodule Egapp.XMPP.Server.Query do
 
   alias Egapp.Config
   alias Egapp.XMPP.Jid
+  alias Egapp.XMPP.Server
   alias Egapp.XMPP.Element
 
   def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, state) do
     content =
-      state.cats
-      |> Enum.filter(fn cat -> cat.address() != Egapp.XMPP.Server.address() end)
+      Config.get(:services)
+      |> Enum.filter(&Kernel.!=(&1, Egapp.XMPP.Server))
       |> Enum.map(fn cat -> Element.item([jid: cat.address()], []) end)
 
     resp = query_template([xmlns: Const.xmlns_disco_items()], content)
@@ -17,12 +18,7 @@ defmodule Egapp.XMPP.Server.Query do
   end
 
   def query(%{"xmlns" => Const.xmlns_disco_info()}, _data, state) do
-    content =
-      state.cats
-      |> Enum.filter(fn cat -> cat.address() == Egapp.XMPP.Server.address() end)
-      |> Enum.map(fn cat -> [cat.identity() | cat.features()] end)
-      |> Kernel.hd()
-
+    content = [Server.identity() | Server.features()]
     resp = query_template([xmlns: Const.xmlns_disco_info()], content)
     {:ok, [{state.to, resp}]}
   end

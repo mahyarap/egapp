@@ -23,10 +23,6 @@ defmodule Egapp.XMPP.FSM do
     state = %{
       mod: Keyword.fetch!(args, :mod),
       to: Keyword.fetch!(args, :to),
-      cats: [
-        Egapp.XMPP.Server,
-        Egapp.XMPP.Conference
-      ],
       client: %{
         is_authenticated: false
       }

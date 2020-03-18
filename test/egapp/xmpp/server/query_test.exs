@@ -18,7 +18,6 @@ defmodule Egapp.XMPP.Server.QueryTest do
 
   test "disco items", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_disco_items()}
-    state = Map.put(state, :cats, [Egapp.XMPP.Server, Egapp.XMPP.Conference])
 
     assert {:ok, result} = Query.query(attrs, nil, state)
 
@@ -35,7 +34,6 @@ defmodule Egapp.XMPP.Server.QueryTest do
 
   test "disco info for server", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_disco_info()}
-    state = Map.put(state, :cats, [Egapp.XMPP.Server])
 
     assert {:ok, result} = Query.query(attrs, nil, state)
 
