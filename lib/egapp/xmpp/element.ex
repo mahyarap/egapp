@@ -65,6 +65,10 @@ defmodule Egapp.XMPP.Element do
 
   def jid(content), do: {:jid, [], [content]}
 
+  def status(code), do: {:status, [code: Integer.to_charlist(code)], []}
+
+  def x(attrs, content), do: {:x, attrs, content}
+
   def bad_request_error(type, desc \\ nil) do
     error(type, error_template(:"bad-request"), desc)
   end
