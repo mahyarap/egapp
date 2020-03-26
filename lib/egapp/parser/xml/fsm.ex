@@ -15,8 +15,8 @@ defmodule Egapp.Parser.XML.FSM do
     }
   end
 
-  def start_link(args) do
-    :gen_fsm.start_link(__MODULE__, args, [])
+  def start_link(args, opts \\ []) do
+    :gen_fsm.start_link(__MODULE__, args, opts)
   end
 
   @impl true
