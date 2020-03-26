@@ -26,7 +26,7 @@ defmodule Egapp.Server do
   end
 
   defp loop(socket, args) do
-    parser = Keyword.fetch!(args, :parser)
+    parser = Keyword.get(args, :parser, Egapp.Parser.XML)
     conn = accept(socket)
 
     {:ok, _} =

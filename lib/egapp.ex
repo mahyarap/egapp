@@ -10,7 +10,7 @@ defmodule Egapp do
       {Egapp.MucRegistry, []},
       {Egapp.JidConnRegistry, []},
       {Task.Supervisor, name: Egapp.ConnectionSupervisor},
-      {Egapp.Server, parser: Egapp.Parser.XML}
+      {Egapp.Server, []}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Egapp.Supervisor)
