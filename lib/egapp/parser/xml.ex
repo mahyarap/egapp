@@ -1,8 +1,13 @@
 defmodule Egapp.Parser.XML do
   @behaviour GenServer
 
+  def start_link(args, opts \\ []) do
+    GenServer.start_link(__MODULE__, args, opts)
+  end
+
   @impl true
-  def init(conn) do
+  def init(args) do
+    conn = Keyword.fetch!(args, :conn)
     {:ok, xmpp_fsm} = :gen_statem.start_link(Egapp.XMPP.FSM, [to: conn, mod: Egapp.Server], [])
 
     {:ok, xml_fsm} =

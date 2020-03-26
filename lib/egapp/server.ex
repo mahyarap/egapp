@@ -31,7 +31,7 @@ defmodule Egapp.Server do
 
     {:ok, _} =
       Task.Supervisor.start_child(Egapp.ConnectionSupervisor, fn ->
-        {:ok, pid} = GenServer.start_link(parser, conn)
+        {:ok, pid} = parser.start_link(conn: conn)
         :gen_tcp.controlling_process(conn, pid)
         recv_loop(conn, parser, pid)
       end)
