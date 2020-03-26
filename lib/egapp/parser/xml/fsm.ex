@@ -21,8 +21,10 @@ defmodule Egapp.Parser.XML.FSM do
 
   @impl true
   def init(args) do
+    conn = Keyword.fetch!(args, :conn)
     parser = Keyword.fetch!(args, :parser)
-    xmpp_fsm = Keyword.fetch!(args, :xmpp_fsm)
+    mod = Keyword.get(args, :mod, Egapp.Server)
+    {:ok, xmpp_fsm} = Egapp.XMPP.FSM.start_link(mod: mod, to: conn)
 
     state = %{
       parser: parser,
