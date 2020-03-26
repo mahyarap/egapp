@@ -21,7 +21,7 @@ defmodule Egapp.XMPP.FSM do
   @impl true
   def init(args) do
     state = %{
-      mod: Keyword.fetch!(args, :mod),
+      mod: Keyword.get(args, :mod, Egapp.Server),
       to: Keyword.fetch!(args, :to),
       client: %{
         is_authenticated: false
