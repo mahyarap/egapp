@@ -7,6 +7,10 @@ defmodule Egapp.XMPP.Server do
     "egapp.im"
   end
 
+  def category, do: :server
+
+  def type, do: :im
+
   def identity do
     Element.identity('server', 'im')
   end

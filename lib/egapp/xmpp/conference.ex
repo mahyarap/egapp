@@ -7,6 +7,10 @@ defmodule Egapp.XMPP.Conference do
     "conference.egapp.im"
   end
 
+  def category, do: :conference
+
+  def type, do: :text
+
   def identity do
     Element.identity('conference', 'text')
   end
