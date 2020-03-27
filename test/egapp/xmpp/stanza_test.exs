@@ -58,29 +58,37 @@ defmodule Egapp.XMPP.StanzaTest do
     setup %{state: state} do
       attrs = %{"type" => "get", "id" => state.id}
       child = {"query", %{"xmlns" => Const.xmlns_disco_items()}, []}
-      services = Application.get_env(:egapp, :services)
-
-      on_exit(fn -> Application.put_env(:egapp, :services, services) end)
-
       {:ok, attrs: attrs, child: child}
     end
 
     test "with empty services", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [])
-      assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      state = Map.put(state, :services, [])
+      assert {:error, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)
 
       assert resp =~ ~s(<iq)
-      assert resp =~ ~s(from="egapp.im")
-      assert resp =~ state.id
-      assert resp =~ ~s(type="result")
-      assert resp =~ ~s(query)
-      assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
-      refute resp =~ ~s(<item)
+      assert resp =~ ~s(type="error")
+      assert resp =~ ~s(<error)
+      assert resp =~ ~s(type="cancel")
+      assert resp =~ ~s(<service-unavailable)
+      assert resp =~ ~s(xmlns="#{Const.xmlns_stanza()}")
     end
 
     test "with just Conference as service", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [Egapp.XMPP.Conference])
+      state = Map.put(state, :services, [Egapp.XMPP.Conference])
+      assert {:error, [{_, resp}]} = Stanza.iq(attrs, child, state)
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<iq)
+      assert resp =~ ~s(type="error")
+      assert resp =~ ~s(<error)
+      assert resp =~ ~s(type="cancel")
+      assert resp =~ ~s(<service-unavailable)
+      assert resp =~ ~s(xmlns="#{Const.xmlns_stanza()}")
+    end
+
+    test "with just server as service", %{attrs: attrs, child: child, state: state} do
+      state = Map.put(state, :services, [Egapp.XMPP.Server])
       assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)
 
@@ -92,10 +100,11 @@ defmodule Egapp.XMPP.StanzaTest do
       assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
       assert resp =~ ~s(<item)
       assert resp =~ ~s(jid="conference.egapp.im")
+      refute resp =~ ~s(jid="egapp.im")
     end
 
     test "with Conference and Server services", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [Egapp.XMPP.Conference, Egapp.XMPP.Server])
+      state = Map.put(state, :services, [Egapp.XMPP.Conference, Egapp.XMPP.Server])
       assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)
 
@@ -115,38 +124,25 @@ defmodule Egapp.XMPP.StanzaTest do
     setup %{state: state} do
       attrs = %{"type" => "get", "id" => state.id}
       child = {"query", %{"xmlns" => Const.xmlns_disco_info()}, []}
-      services = Application.get_env(:egapp, :services)
-
-      on_exit(fn -> Application.put_env(:egapp, :services, services) end)
-
       {:ok, attrs: attrs, child: child}
     end
 
     test "for server with empty services", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [])
+      state = Map.put(state, :services, [])
       attrs = Map.put(attrs, "to", "egapp.im")
       assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)
 
       assert resp =~ ~s(<iq)
-      assert resp =~ ~s(from="egapp.im")
-      assert resp =~ state.id
-      assert resp =~ ~s(type="result")
-      assert resp =~ ~s(query)
-      assert resp =~ ~s(xmlns=") <> Const.xmlns_disco_info() <> ~s(")
-      assert resp =~ ~s(<identity)
-      assert resp =~ ~s(type="im")
-      assert resp =~ ~s(category="server")
-      assert resp =~ ~s(feature var="#{Const.xmlns_disco_items()}")
-      assert resp =~ ~s(feature var="#{Const.xmlns_disco_info()}")
-      assert resp =~ ~s(feature var="#{Const.xmlns_ping()}")
-      assert resp =~ ~s(feature var="#{Const.xmlns_vcard()}")
-      assert resp =~ ~s(feature var="#{Const.xmlns_version()}")
-      assert resp =~ ~s(feature var="#{Const.xmlns_last()}")
+      assert resp =~ ~s(type="error")
+      assert resp =~ ~s(<error)
+      assert resp =~ ~s(type="cancel")
+      assert resp =~ ~s(<service-unavailable)
+      assert resp =~ ~s(xmlns="#{Const.xmlns_stanza()}")
     end
 
     test "for server with server included", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [Egapp.XMPP.Server])
+      state = Map.put(state, :services, [Egapp.XMPP.Server])
       attrs = Map.put(attrs, "to", "egapp.im")
       assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)
@@ -169,7 +165,7 @@ defmodule Egapp.XMPP.StanzaTest do
     end
 
     test "for conference with empty services", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [])
+      state = Map.put(state, :services, [])
       attrs = Map.put(attrs, "to", "conference.egapp.im")
       assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)
@@ -183,7 +179,7 @@ defmodule Egapp.XMPP.StanzaTest do
     end
 
     test "for conference with conference included", %{attrs: attrs, child: child, state: state} do
-      Application.put_env(:egapp, :services, [Egapp.XMPP.Conference])
+      state = Map.put(state, :services, [Egapp.XMPP.Conference])
       attrs = Map.put(attrs, "to", "conference.egapp.im")
       assert {:ok, [{_, resp}]} = Stanza.iq(attrs, child, state)
       resp = IO.chardata_to_string(resp)

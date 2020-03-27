@@ -19,7 +19,19 @@ defmodule Egapp.XMPP.Stanza do
 
   def iq(%{"type" => type} = attrs, data, state)
       when is_map_key(attrs, "id") and type in @iq_types do
-    Egapp.XMPP.Server.Stanza.iq(attrs, data, state)
+    case get_default_stanza_mod(Map.get(state, :services)) do
+      stanza_mod when not is_nil(stanza_mod) ->
+        stanza_mod.iq(attrs, data, state)
+
+      _ ->
+        content = Element.service_unavailable_error(:cancel)
+
+        resp =
+          iq_template(build_iq_attrs(attrs, :error, state), content)
+          |> :xmerl.export_simple_element(:xmerl_xml)
+
+        {:error, [{state.to, resp}]}
+    end
   end
 
   def iq(attrs, _data, state) do
@@ -89,17 +101,20 @@ defmodule Egapp.XMPP.Stanza do
     {:presence, [from: from, to: to], content}
   end
 
+  defp get_default_stanza_mod(services) do
+    with mod when is_atom(mod) and not is_nil(mod) <-
+           Kernel.||(services, Config.get(:services))
+           |> Enum.find(fn service ->
+             service.category() == :server && service.type() == :im
+           end) do
+      mod.stanza_mod()
+    end
+  end
+
   defp do_stanza(stanza, %{"to" => to} = attrs, data, state) do
-    services = Config.get(:services)
+    services = Map.get(state, :services) || Config.get(:services)
 
-    services =
-      if Egapp.XMPP.Server in services do
-        services
-      else
-        [Egapp.XMPP.Server | services]
-      end
-
-    result =
+    mod =
       services
       |> Enum.filter(fn mod ->
         to_domainpart =
@@ -115,11 +130,10 @@ defmodule Egapp.XMPP.Stanza do
         match?(^to_domainpart, mod_domainpart)
       end)
       |> Enum.map(fn mod -> mod.stanza_mod() end)
+      |> List.first()
 
-    if length(result) == 1 do
-      result
-      |> hd()
-      |> apply(stanza, [attrs, data, state])
+    if mod do
+      apply(mod, stanza, [attrs, data, state])
     else
       content = Element.service_unavailable_error(:cancel)
 
