@@ -106,7 +106,19 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def presence(attrs, child, state) when not is_map_key(attrs, "to") do
-    Egapp.XMPP.Server.Stanza.presence(attrs, child, state)
+    case get_default_stanza_mod(Map.get(state, :services)) do
+      stanza_mod when not is_nil(stanza_mod) ->
+        stanza_mod.presence(attrs, child, state)
+
+      _ ->
+        content = Element.service_unavailable_error(:cancel)
+
+        resp =
+          iq_template(build_iq_attrs(attrs, :error, state), content)
+          |> :xmerl.export_simple_element(:xmerl_xml)
+
+        {:error, [{state.to, resp}]}
+    end
   end
 
   def presence_template(%{from: from, to: to}, content) do
