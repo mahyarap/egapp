@@ -66,7 +66,19 @@ defmodule Egapp.XMPP.Stanza do
   end
 
   def message(%{"type" => "chat"} = attrs, children, state) do
-    Egapp.XMPP.Server.Stanza.message(attrs, children, state)
+    case get_default_stanza_mod(Map.get(state, :services)) do
+      stanza_mod when not is_nil(stanza_mod) ->
+        stanza_mod.message(attrs, children, state)
+
+      _ ->
+        content = Element.service_unavailable_error(:cancel)
+
+        resp =
+          iq_template(build_iq_attrs(attrs, :error, state), content)
+          |> :xmerl.export_simple_element(:xmerl_xml)
+
+        {:error, [{state.to, resp}]}
+    end
   end
 
   def build_message_attrs(attrs, _state) do
