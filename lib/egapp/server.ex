@@ -31,7 +31,7 @@ defmodule Egapp.Server do
 
     {:ok, _} =
       Task.Supervisor.start_child(Egapp.ConnectionSupervisor, fn ->
-        {:ok, pid} = parser.start_link(conn: conn)
+        {:ok, pid} = Egapp.Parser.start_link(parser, conn: conn)
         :gen_tcp.controlling_process(conn, pid)
         recv_loop(conn, parser, pid)
       end)
@@ -42,7 +42,7 @@ defmodule Egapp.Server do
   defp recv_loop(conn, parser, pid) do
     case recv(conn) do
       {:ok, packet} ->
-        parser.parse(pid, packet)
+        Egapp.Parser.parse(pid, packet)
         recv_loop(conn, parser, pid)
 
       {:error, :closed} ->

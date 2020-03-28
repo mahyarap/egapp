@@ -1,9 +1,5 @@
 defmodule Egapp.Parser.XML do
-  @behaviour GenServer
-
-  def start_link(args, opts \\ []) do
-    GenServer.start_link(__MODULE__, args, opts)
-  end
+  @behaviour Egapp.Parser
 
   @impl true
   def init(args) do
@@ -14,22 +10,14 @@ defmodule Egapp.Parser.XML do
     {:ok, %{xml_fsm: xml_fsm, stream: stream, conn: conn}}
   end
 
-  def parse(parser, data) do
-    GenServer.cast(parser, data)
-  end
-
-  def reset(parser) do
-    GenServer.call(parser, :reset)
-  end
-
   @impl true
-  def handle_call(:reset, _from, state) do
+  def handle_reset(state) do
     :fxml_stream.reset(state.stream)
     {:reply, :ok, state}
   end
 
   @impl true
-  def handle_cast(data, state) do
+  def handle_parse(data, state) do
     :fxml_stream.parse(state.stream, data)
     {:noreply, state}
   end

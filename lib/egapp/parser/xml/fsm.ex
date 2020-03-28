@@ -79,7 +79,7 @@ defmodule Egapp.Parser.XML.FSM do
     next_state =
       case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), Utils.remove_whitespace(data)}) do
         :reset ->
-          :ok = Egapp.Parser.XML.reset(state.parser)
+          :ok = Egapp.Parser.reset(state.parser)
           :xml_stream_start
 
         _ ->
