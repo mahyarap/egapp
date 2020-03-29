@@ -1,5 +1,5 @@
 defmodule Egapp.Parser.XML do
-  @behaviour Egapp.Parser
+  use Egapp.Parser
 
   @impl true
   def init(args) do

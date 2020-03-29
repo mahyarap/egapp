@@ -20,6 +20,23 @@ defmodule Egapp.Parser do
 
   @optional_callbacks handle_reset: 1, handle_info: 2
 
+  defmacro __using__(opts) do
+    quote location: :keep, bind_quoted: [opts: opts] do
+      @behaviour Egapp.Parser
+
+      def child_spec(init_args) do
+        default = %{
+          id: __MODULE__,
+          start: {__MODULE__, :start_link, [init_args]}
+        }
+
+        Supervisor.child_spec(default, unquote(Macro.escape(opts)))
+      end
+
+      defoverridable child_spec: 1
+    end
+  end
+
   def start_link(parser, args, opts \\ []) do
     args = Keyword.put(args, :parser, parser)
     GenServer.start_link(__MODULE__, args, opts)
