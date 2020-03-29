@@ -12,5 +12,7 @@ config :egapp,
   port: 0
 
 config :logger,
+  level: :warn,
   backends: [:console],
-  level: :warn
+  handle_otp_reports: true,
+  handle_sasl_reports: false

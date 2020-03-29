@@ -3,104 +3,242 @@ defmodule Egapp.Parser.XML.FSMTest do
 
   require Egapp.Constants, as: Const
 
-  setup do
-    xml_fsm = start_supervised!({Egapp.Parser.XML.FSM, mod: Kernel, conn: self(), parser: nil})
-    {:ok, %{xml_fsm: xml_fsm}}
+  describe "in 1st state and no stub" do
+    setup do
+      Process.flag(:trap_exit, true)
+      {:ok, xml_fsm} = Egapp.Parser.XML.FSM.start_link(mod: Kernel, conn: self(), parser: nil)
+      {:ok, %{xml_fsm: xml_fsm}}
+    end
+
+    test "when everything is correct", %{xml_fsm: xml_fsm} do
+      assert {:xml_stream_start, _} = :sys.get_state(xml_fsm)
+
+      event = {
+        :xmlstreamstart,
+        "stream:stream",
+        [
+          {"to", "example.com"},
+          {"xmlns", Const.xmlns_c2s()},
+          {"xmlns:stream", Const.xmlns_stream()},
+          {"version", Const.xmpp_version()}
+        ]
+      }
+
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
+      assert_received resp
+      resp = IO.chardata_to_string(resp)
+
+      assert resp =~ ~s(<stream:stream)
+    end
+
+    test "with syntax error", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {2, "syntax error"}}
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<bad-format"
+      assert_receive {:EXIT, _, :normal}
+    end
+
+    test "with not well formed stream", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {4, "not well-formed (invalid token)"}}
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
+
+    test "with unbound prefix", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {27, "unbound prefix"}}
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
+
+    test "with duplicate attributes", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {8, "duplicate attribute"}}
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
+
+    test "with no stream tag", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamstart, "foo", []}
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
   end
 
-  test "transition from 1st to 2nd state", %{xml_fsm: xml_fsm} do
-    assert {:xml_stream_start, _} = :sys.get_state(xml_fsm)
+  defmodule XMPPFSMStub do
+    @behaviour :gen_statem
 
-    event = {
-      :xmlstreamstart,
-      "stream:stream",
-      [
-        {"to", "example.com"},
-        {"xmlns", Const.xmlns_c2s()},
-        {"xmlns:stream", Const.xmlns_stream()},
-        {"version", Const.xmpp_version()}
+    @impl true
+    def callback_mode, do: :state_functions
+
+    @impl true
+    def init(_args), do: {:ok, :stream_init, []}
+
+    def start_link(args, opts \\ []), do: :gen_statem.start_link(__MODULE__, args, opts)
+
+    def stream_init({:call, from}, {"stream:stream", _attrs}, state) do
+      {:next_state, :stream_element, state, {:reply, from, :continue}}
+    end
+
+    def auth({:call, from}, {"auth", _attrs, ["pass"]}, state) do
+      {:next_state, :stream_init, state, {:reply, from, :reset}}
+    end
+
+    def auth({:call, from}, {"auth", _attrs, ["nopass"]}, state) do
+      {:next_state, :stream_init, state, {:reply, from, :continue}}
+    end
+  end
+
+  defmodule ParserStub do
+    use Egapp.Parser
+
+    def start_link(args), do: Egapp.Parser.start_link(__MODULE__, args, [])
+
+    def init(_args), do: {:ok, []}
+
+    def handle_reset(state), do: {:reply, :ok, state}
+
+    def handle_parse(_data, state), do: {:noreply, state}
+  end
+
+  describe "in 2nd state and parser and fsm being stubbed" do
+    setup do
+      parser = start_supervised!(ParserStub)
+
+      xml_fsm =
+        start_supervised!(
+          {Egapp.Parser.XML.FSM, mod: Kernel, conn: self(), parser: parser, xmpp_fsm: XMPPFSMStub}
+        )
+
+      :sys.replace_state(xml_fsm, fn {_state, %{xmpp_fsm: xmpp_fsm} = data} ->
+        :sys.replace_state(xmpp_fsm, fn {_state, data} -> {:auth, data} end)
+        {:xml_stream_element, data}
+      end)
+
+      {:ok, %{xml_fsm: xml_fsm}}
+    end
+
+    test "when auth succeeds", %{xml_fsm: xml_fsm} do
+      assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
+
+      attrs = [
+        {"xmlns", Const.xmlns_sasl()},
+        {"mechanism", "PLAIN"}
       ]
-    }
 
-    :gen_fsm.send_event(xml_fsm, event)
+      data = [xmlcdata: "pass"]
+      event = {:xmlstreamelement, {:xmlel, "auth", attrs, data}}
+      :gen_fsm.send_event(xml_fsm, event)
 
-    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
-    assert_received resp
-    refute Enum.empty?(resp)
+      assert {:xml_stream_start, _} = :sys.get_state(xml_fsm)
+    end
+
+    test "when auth fails", %{xml_fsm: xml_fsm} do
+      assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
+
+      attrs = [
+        {"xmlns", Const.xmlns_sasl()},
+        {"mechanism", "PLAIN"}
+      ]
+
+      data = [xmlcdata: "nopass"]
+      event = {:xmlstreamelement, {:xmlel, "auth", attrs, data}}
+      :gen_fsm.send_event(xml_fsm, event)
+
+      assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
+    end
   end
 
-  test "transition from 1st to 2nd state with syntax error", %{xml_fsm: xml_fsm} do
-    event = {:xmlstreamerror, {2, "syntax error"}}
-    :gen_fsm.send_event(xml_fsm, event)
+  describe "in 2nd state and parser stubbed" do
+    setup do
+      Process.flag(:trap_exit, true)
+      {:ok, xml_fsm} = Egapp.Parser.XML.FSM.start_link(mod: Kernel, conn: self(), parser: nil)
 
-    catch_exit(:sys.get_state(xml_fsm))
-    assert_received resp
-    resp = IO.chardata_to_string(resp)
-    assert resp =~ "<bad-format"
-  end
+      :sys.replace_state(xml_fsm, fn {_state, %{xmpp_fsm: xmpp_fsm} = data} ->
+        :sys.replace_state(xmpp_fsm, fn {_state, data} -> {:auth, data} end)
+        {:xml_stream_element, data}
+      end)
 
-  test "transition from 1st to 2nd state with not well formed stream", %{xml_fsm: xml_fsm} do
-    event = {:xmlstreamerror, {4, "not well-formed (invalid token)"}}
-    :gen_fsm.send_event(xml_fsm, event)
+      {:ok, %{xml_fsm: xml_fsm}}
+    end
 
-    catch_exit(:sys.get_state(xml_fsm))
-    assert_received resp
+    test "with syntax error", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {2, "syntax error"}}
+      :gen_fsm.send_event(xml_fsm, event)
 
-    resp = IO.chardata_to_string(resp)
-    assert resp =~ "<not-well-formed"
-  end
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<bad-format"
+      assert_receive {:EXIT, _, :normal}
+    end
 
-  test "transition from 1st to 2nd state with unbound prefix", %{xml_fsm: xml_fsm} do
-    event = {:xmlstreamerror, {27, "unbound prefix"}}
-    :gen_fsm.send_event(xml_fsm, event)
+    test "with not well formed stream", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {4, "not well-formed (invalid token)"}}
+      :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(xml_fsm))
-    assert_received resp
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
 
-    resp = IO.chardata_to_string(resp)
-    assert resp =~ "<not-well-formed"
-  end
+    test "with unbound prefix", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {27, "unbound prefix"}}
+      :gen_fsm.send_event(xml_fsm, event)
 
-  test "transition from 1st to 2nd state with duplicate attributes", %{xml_fsm: xml_fsm} do
-    event = {:xmlstreamerror, {8, "duplicate attribute"}}
-    :gen_fsm.send_event(xml_fsm, event)
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
 
-    catch_exit(:sys.get_state(xml_fsm))
-    assert_received resp
+    test "with duplicate attributes", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamerror, {8, "duplicate attribute"}}
+      :gen_fsm.send_event(xml_fsm, event)
 
-    resp = IO.chardata_to_string(resp)
-    assert resp =~ "<not-well-formed"
-  end
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
 
-  test "transition from 1st to 2nd state with no stream tag", %{xml_fsm: xml_fsm} do
-    event = {:xmlstreamstart, "foo", []}
-    :gen_fsm.send_event(xml_fsm, event)
+    test "with invalid tag", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamelement, {:xmlel, "foo", %{}, []}}
+      :gen_fsm.send_event(xml_fsm, event)
 
-    catch_exit(:sys.get_state(xml_fsm))
-    assert_received resp
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "<not-well-formed"
+      assert_receive {:EXIT, _, :normal}
+    end
 
-    resp = IO.chardata_to_string(resp)
-    assert resp =~ "<not-well-formed"
-  end
+    test "with stream end", %{xml_fsm: xml_fsm} do
+      event = {:xmlstreamend, :end}
+      :gen_fsm.send_event(xml_fsm, event)
 
-  @tag skip: "This needs to use a stub"
-  test "transition from 2nd to 2nd state", %{xml_fsm: xml_fsm} do
-    # Ecto.Adapters.SQL.Sandbox.allow(Egapp.Repo, self(), xmpp_fsm)
-    # :sys.replace_state(xmpp_fsm, fn {_state, data} -> {:auth, data} end)
-    :sys.replace_state(xml_fsm, fn {_state, data} -> {:xml_stream_element, data} end)
-
-    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
-
-    attrs = [
-      {"xmlns", Const.xmlns_sasl()},
-      {"mechanism", "PLAIN"}
-    ]
-
-    event = {:xmlstreamelement, {:xmlel, "auth", attrs, []}}
-    :gen_fsm.send_event(xml_fsm, event)
-
-    assert {:xml_stream_element, _} = :sys.get_state(xml_fsm)
-    assert_receive resp
-    refute Enum.empty?(resp)
+      assert_receive resp
+      resp = IO.chardata_to_string(resp)
+      assert resp =~ "</stream:stream>"
+      assert_receive {:EXIT, _, :normal}
+    end
   end
 end

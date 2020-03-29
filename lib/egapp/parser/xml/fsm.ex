@@ -75,17 +75,17 @@ defmodule Egapp.Parser.XML.FSM do
       }"
     )
 
-    next_state =
-      case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), neutralize(data)}) do
-        :reset ->
-          :ok = Egapp.Parser.reset(state.parser)
-          :xml_stream_start
+    case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), neutralize(data)}) do
+      :reset ->
+        :ok = Egapp.Parser.reset(state.parser)
+        {:next_state, :xml_stream_start, state}
 
-        _ ->
-          :xml_stream_element
-      end
+      :stop ->
+        {:stop, :normal, state}
 
-    {:next_state, next_state, state}
+      _ ->
+        {:next_state, :xml_stream_element, state}
+    end
   end
 
   def xml_stream_element({:xmlstreamerror, error}, state) do
