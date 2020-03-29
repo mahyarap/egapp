@@ -241,7 +241,7 @@ defmodule Egapp.XMPP.Stream do
   defp auth_error_template(err), do: {:failure, [xmlns: Const.xmlns_sasl()], [err]}
 
   defp prepend_xml_decl(content) do
-    ['<?xml version="1.0"?>' | content]
+    [Const.xml_decl | content]
   end
 
   defp remove_last_closing_tag(content) do

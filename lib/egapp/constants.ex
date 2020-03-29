@@ -42,6 +42,7 @@ defmodule Egapp.Constants do
   @moduledoc false
   use Constants
 
+  const xml_decl,           '<?xml version="1.0"?>'
   const xmlns_bind,         "urn:ietf:params:xml:ns:xmpp-bind"
   const xmlns_bytestreams,  "http://jabber.org/protocol/bytestreams"
   const xmlns_c2s,          "jabber:client"
