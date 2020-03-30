@@ -54,7 +54,7 @@ defmodule Egapp.XMPP.StanzaTest do
     assert resp =~ ~s(type="result")
   end
 
-  describe "disco items" do
+  describe "disco items with no to attr" do
     setup %{state: state} do
       attrs = %{"type" => "get", "id" => state.id}
       child = {"query", %{"xmlns" => Const.xmlns_disco_items()}, []}
@@ -98,9 +98,7 @@ defmodule Egapp.XMPP.StanzaTest do
       assert resp =~ ~s(type="result")
       assert resp =~ ~s(query)
       assert resp =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
-      assert resp =~ ~s(<item)
-      assert resp =~ ~s(jid="conference.egapp.im")
-      refute resp =~ ~s(jid="egapp.im")
+      refute resp =~ ~s(<item)
     end
 
     test "with Conference and Server services", %{attrs: attrs, child: child, state: state} do

@@ -9,7 +9,7 @@ defmodule Egapp.XMPP.Server.Query do
 
   def query(%{"xmlns" => Const.xmlns_disco_items()}, _data, state) do
     content =
-      Config.get(:services)
+      Kernel.||(Map.get(state, :services), Config.get(:services))
       |> Enum.filter(&Kernel.!=(&1, Egapp.XMPP.Server))
       |> Enum.map(fn cat -> Element.item([jid: cat.address()], []) end)
 
