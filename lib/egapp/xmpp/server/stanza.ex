@@ -82,7 +82,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => "set"} = attrs, {"bind", _child_attrs, _child_data}, state) do
+  def iq(%{"type" => "set"} = attrs, {"bind", %{"xmlns" => Const.xmlns_bind()}, _child_data}, state) do
     full_jid = Jid.full_jid(state.client.jid) |> String.to_charlist()
     content = Element.bind(Element.jid(full_jid))
 
