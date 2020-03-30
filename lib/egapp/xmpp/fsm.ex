@@ -69,33 +69,42 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def stream_init({:call, from}, {:error, error}, state) do
-    resp =
+    error =
       case error do
         {2, "syntax error"} ->
-          Stream.error(:bad_format, %{}, state)
+          Stream.bad_format_error()
 
         {4, "not well-formed (invalid token)"} ->
-          Stream.error(:not_well_formed, %{}, state)
+          Stream.not_well_formed_error()
 
         {7, "mismatched tag"} ->
-          Stream.error(:bad_format, %{}, state)
+          Stream.bad_format_error()
 
         {27, "unbound prefix"} ->
-          Stream.error(:not_well_formed, %{}, state)
+          Stream.not_well_formed_error()
 
         {8, "duplicate attribute"} ->
-          Stream.error(:not_well_formed, %{}, state)
+          Stream.not_well_formed_error()
 
         _ ->
           raise "should not get here"
       end
+
+    resp =
+      error
+      |> Stream.stream_template(Stream.build_stream_attrs(%{}, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
 
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
   def stream_init({:call, from}, {_tag_name, attrs}, state) do
-    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+    resp =
+      Stream.not_well_formed_error()
+      |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
@@ -123,13 +132,21 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def auth({:call, from}, {_tag_name, attrs}, state) do
-    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+    resp =
+      Stream.not_well_formed_error()
+      |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
   def auth({:call, from}, {_tag_name, attrs, _data}, state) do
-    resp = Stream.error(:not_well_formed, attrs, state, stream_header: true)
+    resp =
+      Stream.not_well_formed_error()
+      |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
@@ -149,7 +166,11 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def bind({:call, from}, {_tag_name, attrs, _data}, state) do
-    resp = Stream.error(:not_authorized, attrs, state)
+    resp =
+      Stream.not_authorized_error()
+      |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
     apply(state.mod, :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end

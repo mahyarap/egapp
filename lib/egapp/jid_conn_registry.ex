@@ -6,6 +6,8 @@ defmodule Egapp.JidConnRegistry do
   module interface directly to the ETS functions. This way, we make sure
   messages are not serialized by the GenServer.
   """
+  @callback match(key :: term) :: [tuple]
+  @callback put(key :: term, val :: term) :: {:ok, tuple} | {:error, term}
 
   use GenServer
 

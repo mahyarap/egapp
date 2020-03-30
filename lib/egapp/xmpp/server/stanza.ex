@@ -115,7 +115,11 @@ defmodule Egapp.XMPP.Server.Stanza do
   end
 
   def iq(attrs, _data, state) do
-    resp = Stream.error(:invalid_xml, attrs, state)
+    resp =
+      Stream.invalid_xml_error()
+      |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
     {:error, [{state.to, resp}]}
   end
 

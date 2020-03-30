@@ -1,4 +1,10 @@
 defmodule Egapp.SASL.Digest do
+  @behaviour Egapp.SASL
+
+  @impl true
+  def type, do: :digest
+
+  @impl true
   def authenticate(_message) do
     Egapp.XMPP.Element.challenge()
   end

@@ -8,6 +8,10 @@ config :egapp,
   services: [
     Egapp.XMPP.Server,
     Egapp.XMPP.Conference
+  ],
+  sasl_mechanisms: [
+    Egapp.SASL.Plain,
+    Egapp.SASL.Digest
   ]
 
 import_config "#{Mix.env()}.exs"

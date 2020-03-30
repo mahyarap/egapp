@@ -2,13 +2,12 @@ defmodule Egapp.SASL do
   @moduledoc """
   A SASL behaviour
   """
-  @callback authenticate(any()) :: any()
+  @callback type() :: atom
+  @callback authenticate(String.t) :: term
 
-  def authenticate!(mechanism, message) do
-    case mechanism do
-      "PLAIN" -> Egapp.SASL.Plain.authenticate(message)
-      "DIGEST-MD5" -> Egapp.SASL.Digest.authenticate(message)
-      _ -> raise "no match"
-    end
+  def authenticate!(mechanism, message, mechanisms) do
+    mechanisms
+    |> Enum.find(fn mech -> mech.type() |> Atom.to_string() |> String.upcase() == mechanism end)
+    |> apply(:authenticate, [message])
   end
 end

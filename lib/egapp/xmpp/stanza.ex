@@ -34,8 +34,12 @@ defmodule Egapp.XMPP.Stanza do
     end
   end
 
-  def iq(attrs, _data, state) do
-    {:error, [{state.to, Stream.error(:invalid_xml, attrs, state)}]}
+  def iq(_attrs, _data, state) do
+    resp =
+      Stream.invalid_xml_error()
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    {:error, [{state.to, resp}]}
   end
 
   def iq_template(%{id: id, type: type, from: from}, content) do

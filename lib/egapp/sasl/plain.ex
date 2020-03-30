@@ -3,7 +3,10 @@ defmodule Egapp.SASL.Plain do
 
   @behaviour Egapp.SASL
 
-  @impl Egapp.SASL
+  @impl true
+  def type, do: :plain
+
+  @impl true
   def authenticate(message) do
     result =
       Base.decode64!(message)
