@@ -158,4 +158,19 @@ defmodule Egapp.XMPP.Server.QueryTest do
     roster = query |> Egapp.Repo.one()
     assert nil == roster
   end
+
+  test "passing unknown xml namespace", %{state: state} do
+    attrs = %{"xmlns" => "foo"}
+
+    assert {:error, result} = Query.query(attrs, nil, state)
+
+    result =
+      result
+      |> extract_resp()
+      |> :xmerl.export_simple_element(:xmerl_xml)
+      |> IO.chardata_to_string()
+
+    assert result =~ "<error"
+    assert result =~ "<service-unavailable"
+  end
 end

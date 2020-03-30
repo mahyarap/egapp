@@ -135,7 +135,7 @@ defmodule Egapp.XMPP.Server.Query do
   end
 
   def query(%{"xmlns" => _xmlns}, _data, state) do
-    {:error, [{state.to, Egapp.XMPP.Element.feature_not_implemented_error(:cancel)}]}
+    {:error, [{state.to, Egapp.XMPP.Element.service_unavailable_error(:cancel)}]}
   end
 
   def query_template(attrs, content), do: {:query, attrs, content}
