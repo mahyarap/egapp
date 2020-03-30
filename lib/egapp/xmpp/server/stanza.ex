@@ -13,6 +13,7 @@ defmodule Egapp.XMPP.Server.Stanza do
 
   alias Egapp.Config
   alias Egapp.XMPP.Jid
+  alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Element
   alias Egapp.JidConnRegistry
   alias Egapp.XMPP.Server.Query
@@ -111,6 +112,11 @@ defmodule Egapp.XMPP.Server.Stanza do
       |> :xmerl.export_simple_element(:xmerl_xml)
 
     {:ok, [{state.to, resp}]}
+  end
+
+  def iq(attrs, _data, state) do
+    resp = Stream.error(:invalid_xml, attrs, state)
+    {:error, [{state.to, resp}]}
   end
 
   def message(%{"to" => to} = attrs, children, state) do
