@@ -16,23 +16,80 @@ defmodule Egapp.XMPP.Server.QueryTest do
 
   defp extract_resp([{_conn, resp}]), do: resp
 
-  test "disco items", %{state: state} do
-    attrs = %{"xmlns" => Const.xmlns_disco_items()}
+  describe "disco items" do
+    test "with empty services returns no item", %{state: state} do
+      attrs = %{"xmlns" => Const.xmlns_disco_items()}
+      state = Map.put(state, :services, [])
 
-    assert {:ok, result} = Query.query(attrs, nil, state)
+      assert {:ok, result} = Query.query(attrs, nil, state)
 
-    result =
-      result
-      |> extract_resp()
-      |> :xmerl.export_simple_element(:xmerl_xml)
-      |> IO.chardata_to_string()
+      result =
+        result
+        |> extract_resp()
+        |> :xmerl.export_simple_element(:xmerl_xml)
+        |> IO.chardata_to_string()
 
-    assert result =~ ~s(<query)
-    assert result =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
-    assert result =~ ~s(<item)
+      assert result =~ ~s(<query)
+      assert result =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      refute result =~ ~s(<item)
+    end
+
+    test "with only Server service returns no item", %{state: state} do
+      attrs = %{"xmlns" => Const.xmlns_disco_items()}
+      state = Map.put(state, :services, [Egapp.XMPP.Server])
+
+      assert {:ok, result} = Query.query(attrs, nil, state)
+
+      result =
+        result
+        |> extract_resp()
+        |> :xmerl.export_simple_element(:xmerl_xml)
+        |> IO.chardata_to_string()
+
+      assert result =~ ~s(<query)
+      assert result =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      refute result =~ ~s(<item)
+    end
+
+    test "with only Conference service returns conference", %{state: state} do
+      attrs = %{"xmlns" => Const.xmlns_disco_items()}
+      state = Map.put(state, :services, [Egapp.XMPP.Conference])
+
+      assert {:ok, result} = Query.query(attrs, nil, state)
+
+      result =
+        result
+        |> extract_resp()
+        |> :xmerl.export_simple_element(:xmerl_xml)
+        |> IO.chardata_to_string()
+
+      assert result =~ ~s(<query)
+      assert result =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      assert result =~ ~s(<item)
+      assert result =~ ~s(jid="#{Egapp.XMPP.Conference.address()}")
+    end
+
+    test "with Server and Conference services returns conference", %{state: state} do
+      attrs = %{"xmlns" => Const.xmlns_disco_items()}
+      state = Map.put(state, :services, [Egapp.XMPP.Conference, Egapp.XMPP.Server])
+
+      assert {:ok, result} = Query.query(attrs, nil, state)
+
+      result =
+        result
+        |> extract_resp()
+        |> :xmerl.export_simple_element(:xmerl_xml)
+        |> IO.chardata_to_string()
+
+      assert result =~ ~s(<query)
+      assert result =~ ~s(xmlns="#{Const.xmlns_disco_items()}")
+      assert result =~ ~s(<item)
+      assert result =~ ~s(jid="#{Egapp.XMPP.Conference.address()}")
+      refute result =~ ~s(jid="#{Egapp.XMPP.Server.address()}")
+    end
   end
 
-  test "disco info for server", %{state: state} do
+  test "disco info", %{state: state} do
     attrs = %{"xmlns" => Const.xmlns_disco_info()}
 
     assert {:ok, result} = Query.query(attrs, nil, state)
