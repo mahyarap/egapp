@@ -34,10 +34,7 @@ defmodule Egapp.XMPP.Stream do
     resp =
       stream_template(build_stream_attrs(attrs, state), content)
       |> :xmerl.export_simple_element(:xmerl_xml)
-      # Remove </stream:stream> which is automatically created
-      |> Enum.reverse()
-      |> tl()
-      |> Enum.reverse()
+      |> remove_last_closing_tag()
       |> prepend_xml_decl()
 
     {:ok, resp}
@@ -306,5 +303,12 @@ defmodule Egapp.XMPP.Stream do
 
   defp prepend_xml_decl(content) do
     ['<?xml version="1.0"?>' | content]
+  end
+
+  def remove_last_closing_tag(content) do
+    content
+    |> Enum.reverse()
+    |> tl()
+    |> Enum.reverse()
   end
 end
