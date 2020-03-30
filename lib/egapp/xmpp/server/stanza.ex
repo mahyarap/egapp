@@ -17,6 +17,8 @@ defmodule Egapp.XMPP.Server.Stanza do
   alias Egapp.JidConnRegistry
   alias Egapp.XMPP.Server.Query
 
+  @iq_types ["get", "set"]
+
   def iq(%{"type" => "get"} = attrs, {"query", child_attrs, child_data}, state) do
     {status, result} = Query.query(child_attrs, child_data, state)
 
@@ -101,7 +103,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, [{state.to, resp}]}
   end
 
-  def iq(attrs, {element, _child_attrs, _child_data}, state) do
+  def iq(%{"type" => type} = attrs, {element, _child_attrs, _child_data}, state) when type in @iq_types do
     content = Egapp.XMPP.Element.bad_request_error(:modify, "unknown element: #{element}")
 
     resp =
