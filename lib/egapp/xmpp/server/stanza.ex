@@ -93,7 +93,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, [{state.to, resp}]}
   end
 
-  def iq(%{"type" => "set"} = attrs, {"session", _child_attrs, _child_data}, state) do
+  def iq(%{"type" => "set"} = attrs, {"session", %{"xmlns" => Const.xmlns_session()}, _child_data}, state) do
     resp =
       iq_template(build_iq_attrs(attrs, :ok, state), [])
       |> :xmerl.export_simple_element(:xmerl_xml)
