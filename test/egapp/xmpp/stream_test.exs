@@ -163,7 +163,7 @@ defmodule Egapp.XMPP.StreamTest do
 
       assert %{client: %{is_authenticated: false}} = state
 
-      assert {:ok, resp, new_state} = Stream.auth(attrs, [xmlcdata: "pass"], state)
+      assert {:ok, resp, new_state} = Stream.auth(attrs, ["pass"], state)
       resp = IO.chardata_to_string(resp)
 
       assert resp =~ ~s(<success)
@@ -186,7 +186,7 @@ defmodule Egapp.XMPP.StreamTest do
 
       assert %{client: %{is_authenticated: false}} = state
 
-      assert {:retry, resp, new_state} = Stream.auth(attrs, [xmlcdata: "nopass"], state)
+      assert {:retry, resp, new_state} = Stream.auth(attrs, ["nopass"], state)
       resp = IO.chardata_to_string(resp)
 
       assert resp =~ ~s(<failure)

@@ -72,12 +72,6 @@ defmodule Egapp.XMPP.Server.Stanza do
   end
 
   def iq(%{"type" => "set"} = attrs, {"query", child_attrs, child_data}, state) do
-    child_data =
-      case child_data do
-        [{:xmlel, tag_name, child_attrs, child_data}] ->
-          {tag_name, to_map(child_attrs), child_data}
-      end
-
     {status, result} = Query.query(child_attrs, child_data, state)
 
     resp =
@@ -176,8 +170,7 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:paused, [xmlns: Const.xmlns_chatstates()], []}
   end
 
-  defp do_message("body", _attrs, data) do
-    [xmlcdata: body] = data
+  defp do_message("body", _attrs, [body]) do
     {:body, [String.to_charlist(body)]}
   end
 
@@ -294,9 +287,5 @@ defmodule Egapp.XMPP.Server.Stanza do
 
       {conn, resp}
     end)
-  end
-
-  defp to_map(attrs) do
-    Enum.into(attrs, %{})
   end
 end

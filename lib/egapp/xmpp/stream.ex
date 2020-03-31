@@ -122,14 +122,8 @@ defmodule Egapp.XMPP.Stream do
     {:"stream:stream", attrs, content}
   end
 
-  def auth(%{"xmlns" => Const.xmlns_sasl(), "mechanism" => mechanism}, data, state)
+  def auth(%{"xmlns" => Const.xmlns_sasl(), "mechanism" => mechanism}, [message], state)
       when mechanism in ["PLAIN", "DIGEST-MD5"] do
-    message =
-      case data do
-        [] -> ""
-        [xmlcdata: message] -> message
-      end
-
     sasl_mechanisms = Map.get(state, :sasl_mechanisms) || Config.get(:sasl_mechanisms)
     jid_conn_registry = Map.get(state, :jid_conn_registry, JidConnRegistry)
 

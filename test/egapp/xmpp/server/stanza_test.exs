@@ -76,7 +76,7 @@ defmodule Egapp.XMPP.Server.StanzaTest do
       data = {
         "query",
         %{"xmlns" => Const.xmlns_roster()},
-        [{:xmlel, "item", %{"subscription" => "remove", "jid" => "foo@bar"}, []}]
+        [{"item", %{"subscription" => "remove", "jid" => "foo@bar"}, []}]
       }
 
       state = put_in(state, [:client, :id], 1)
@@ -100,7 +100,7 @@ defmodule Egapp.XMPP.Server.StanzaTest do
       data = {
         "query",
         %{"xmlns" => "foo"},
-        [{:xmlel, "item", %{"subscription" => "remove", "jid" => "foo@bar"}, []}]
+        [{"item", %{"subscription" => "remove", "jid" => "foo@bar"}, []}]
       }
 
       assert {:ok, resp} = Stanza.iq(attrs, data, state)

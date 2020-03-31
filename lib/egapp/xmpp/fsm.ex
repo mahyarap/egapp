@@ -1,5 +1,4 @@
 defmodule Egapp.XMPP.FSM do
-  alias Egapp.Utils
   alias Egapp.XMPP.Stream
   alias Egapp.XMPP.Stanza
 
@@ -151,8 +150,7 @@ defmodule Egapp.XMPP.FSM do
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
-  def bind({:call, from}, {"iq", attrs, [{:xmlel, "bind", child_attrs, child_data}]}, state) do
-    child_node = {"bind", to_map(child_attrs), child_data}
+  def bind({:call, from}, {"iq", attrs, [{"bind", _child_attrs, _child_data} = child_node]}, state) do
     {status, resp} = Stanza.iq(attrs, child_node, state)
 
     Enum.each(resp, fn {conn, content} ->
@@ -180,14 +178,8 @@ defmodule Egapp.XMPP.FSM do
     {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
-  def stanza({:call, from}, {"iq", attrs, data}, state) do
-    child_node =
-      case data do
-        [{:xmlel, tag_name, child_attrs, child_data}] ->
-          {tag_name, to_map(child_attrs), Utils.remove_whitespace(child_data)}
-      end
-
-    {status, resp} = Stanza.iq(attrs, child_node, state)
+  def stanza({:call, from}, {"iq", attrs, [data]}, state) do
+    {status, resp} = Stanza.iq(attrs, data, state)
 
     Enum.each(resp, fn {conn, content} ->
       apply(state.mod, :send, [conn, content])
@@ -209,14 +201,7 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def stanza({:call, from}, {"message", attrs, data}, state) do
-    children =
-      data
-      |> Enum.map(fn child ->
-        {:xmlel, tag_name, attrs, data} = child
-        {tag_name, to_map(attrs), data}
-      end)
-
-    {:ok, {to, resp}} = Stanza.message(attrs, children, state)
+    {:ok, {to, resp}} = Stanza.message(attrs, data, state)
     apply(state.mod, :send, [to, resp])
     {:next_state, :stanza, state, {:reply, from, :continue}}
   end
@@ -224,9 +209,5 @@ defmodule Egapp.XMPP.FSM do
   def stanza({:call, from}, :end, state) do
     apply(state.mod, :send, [state.to, Stream.stream_end()])
     {:stop_and_reply, :normal, {:reply, from, :stop}}
-  end
-
-  defp to_map(attrs) do
-    Enum.into(attrs, %{})
   end
 end

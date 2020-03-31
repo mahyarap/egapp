@@ -1,8 +1,6 @@
 defmodule Egapp.Parser.XML.FSM do
   require Logger
 
-  alias Egapp.Utils
-
   @behaviour :gen_fsm
 
   def child_spec(opts) do
@@ -77,7 +75,7 @@ defmodule Egapp.Parser.XML.FSM do
     )
 
     next_state =
-      case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), Utils.remove_whitespace(data)}) do
+      case :gen_statem.call(state.xmpp_fsm, {child, to_map(attrs), neutralize(data)}) do
         :reset ->
           :ok = Egapp.Parser.reset(state.parser)
           :xml_stream_start
@@ -103,4 +101,19 @@ defmodule Egapp.Parser.XML.FSM do
   defp to_map(attrs) do
     Enum.into(attrs, %{})
   end
+
+  defp neutralize([h | t]) do
+    maped = neutralize(h)
+    if maped, do: [maped | neutralize(t)], else: neutralize(t)
+  end
+
+  defp neutralize({:xmlel, tag_name, attrs, children}) do
+    {tag_name, to_map(attrs), neutralize(children)}
+  end
+
+  defp neutralize({:xmlcdata, "\n"}), do: nil
+
+  defp neutralize({:xmlcdata, content}), do: content
+
+  defp neutralize([]), do: []
 end

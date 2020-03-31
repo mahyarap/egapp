@@ -158,7 +158,7 @@ defmodule Egapp.XMPP.FSMTest do
     end)
 
     attrs = %{"type" => "set", "id" => "abc"}
-    data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
+    data = [{"bind", %{"xmlns" => Const.xmlns_bind()}, []}]
 
     assert :continue = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -170,7 +170,7 @@ defmodule Egapp.XMPP.FSMTest do
   test "bind fails with invalid iq type", %{fsm: fsm} do
     :sys.replace_state(fsm, fn {_state, data} -> {:bind, data} end)
     attrs = %{"type" => "foo"}
-    data = [{:xmlel, "bind", [{"xmlns", Const.xmlns_bind()}], []}]
+    data = [{"bind", [{"xmlns", Const.xmlns_bind()}], []}]
 
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -182,7 +182,7 @@ defmodule Egapp.XMPP.FSMTest do
   test "bind fails with invalid tag", %{fsm: fsm} do
     :sys.replace_state(fsm, fn {_state, data} -> {:bind, data} end)
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "foo", [{"xmlns", Const.xmlns_bind()}], []}]
+    data = [{"foo", [{"xmlns", Const.xmlns_bind()}], []}]
 
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
@@ -194,7 +194,7 @@ defmodule Egapp.XMPP.FSMTest do
   test "bind fails with invalid bind attr", %{fsm: fsm} do
     :sys.replace_state(fsm, fn {_state, data} -> {:bind, data} end)
     attrs = %{"type" => "set"}
-    data = [{:xmlel, "bind", [{"xmlns", "foo"}], []}]
+    data = [{"bind", [{"xmlns", "foo"}], []}]
 
     assert :stop = :gen_statem.call(fsm, {"iq", attrs, data})
     assert_received resp
