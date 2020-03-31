@@ -162,15 +162,18 @@ defmodule Egapp.XMPP.Stream do
     {status, resp, state}
   end
 
-  def auth(%{"xmlns" => Const.xmlns_sasl()} = attrs, _data, state) when is_map_key(attrs, "mechanism") do
-    resp = invalid_namespace_error()
+  def auth(%{"xmlns" => Const.xmlns_sasl()} = attrs, _data, state)
+      when is_map_key(attrs, "mechanism") do
+    resp =
+      invalid_namespace_error()
       |> :xmerl.export_simple_element(:xmerl_xml)
 
     {:error, resp, state}
   end
 
   def auth(attrs, _data, state) when is_map_key(attrs, "mechanism") do
-    resp = invalid_mechanism_error()
+    resp =
+      invalid_mechanism_error()
       |> :xmerl.export_simple_element(:xmerl_xml)
 
     {:error, resp, state}

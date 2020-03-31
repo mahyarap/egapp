@@ -36,7 +36,11 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => "get"} = attrs, {"vCard", %{"xmlns" => Const.xmlns_vcard()}, _child_data}, state) do
+  def iq(
+        %{"type" => "get"} = attrs,
+        {"vCard", %{"xmlns" => Const.xmlns_vcard()}, _child_data},
+        state
+      ) do
     resp =
       iq_template(build_iq_attrs(attrs, :ok, state), Element.vcard())
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -55,7 +59,11 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, [{state.to, resp}]}
   end
 
-  def iq(%{"type" => "get"} = attrs, {"ping", %{"xmlns" => Const.xmlns_ping()}, _child_data}, state) do
+  def iq(
+        %{"type" => "get"} = attrs,
+        {"ping", %{"xmlns" => Const.xmlns_ping()}, _child_data},
+        state
+      ) do
     resp =
       iq_template(build_iq_attrs(attrs, :ok, state), Element.ping())
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -85,7 +93,11 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => "set"} = attrs, {"bind", %{"xmlns" => Const.xmlns_bind()}, _child_data}, state) do
+  def iq(
+        %{"type" => "set"} = attrs,
+        {"bind", %{"xmlns" => Const.xmlns_bind()}, _child_data},
+        state
+      ) do
     full_jid = Jid.full_jid(state.client.jid) |> String.to_charlist()
     content = Element.bind(Element.jid(full_jid))
 
@@ -96,7 +108,11 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, [{state.to, resp}]}
   end
 
-  def iq(%{"type" => "set"} = attrs, {"session", %{"xmlns" => Const.xmlns_session()}, _child_data}, state) do
+  def iq(
+        %{"type" => "set"} = attrs,
+        {"session", %{"xmlns" => Const.xmlns_session()}, _child_data},
+        state
+      ) do
     resp =
       iq_template(build_iq_attrs(attrs, :ok, state), nil)
       |> :xmerl.export_simple_element(:xmerl_xml)
@@ -104,7 +120,8 @@ defmodule Egapp.XMPP.Server.Stanza do
     {:ok, [{state.to, resp}]}
   end
 
-  def iq(%{"type" => type} = attrs, {element, _child_attrs, _child_data}, state) when type in @iq_types do
+  def iq(%{"type" => type} = attrs, {element, _child_attrs, _child_data}, state)
+      when type in @iq_types do
     content = Egapp.XMPP.Element.bad_request_error(:modify, "unknown element: #{element}")
 
     resp =

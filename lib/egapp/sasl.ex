@@ -3,7 +3,7 @@ defmodule Egapp.SASL do
   A SASL behaviour
   """
   @callback type() :: atom
-  @callback authenticate(String.t) :: term
+  @callback authenticate(String.t()) :: term
 
   def authenticate!(mechanism, message, mechanisms) do
     mechanisms

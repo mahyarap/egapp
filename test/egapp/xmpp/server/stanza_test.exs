@@ -17,7 +17,7 @@ defmodule Egapp.XMPP.Server.StanzaTest do
   end
 
   describe "iq get" do
-    setup do 
+    setup do
       [attrs: %{"type" => "get"}]
     end
 
@@ -78,6 +78,7 @@ defmodule Egapp.XMPP.Server.StanzaTest do
         %{"xmlns" => Const.xmlns_roster()},
         [{:xmlel, "item", %{"subscription" => "remove", "jid" => "foo@bar"}, []}]
       }
+
       state = put_in(state, [:client, :id], 1)
       assert {:ok, resp} = Stanza.iq(attrs, data, state)
 
@@ -101,6 +102,7 @@ defmodule Egapp.XMPP.Server.StanzaTest do
         %{"xmlns" => "foo"},
         [{:xmlel, "item", %{"subscription" => "remove", "jid" => "foo@bar"}, []}]
       }
+
       assert {:ok, resp} = Stanza.iq(attrs, data, state)
 
       resp = chardata_to_string(resp)
@@ -109,7 +111,14 @@ defmodule Egapp.XMPP.Server.StanzaTest do
 
     test "with bind", %{state: state, attrs: attrs} do
       data = {"bind", %{"xmlns" => Const.xmlns_bind()}, []}
-      state = put_in(state, [:client, :jid], %Jid{localpart: "foo", domainpart: "bar", resourcepart: "123"})
+
+      state =
+        put_in(state, [:client, :jid], %Jid{
+          localpart: "foo",
+          domainpart: "bar",
+          resourcepart: "123"
+        })
+
       assert {:ok, resp} = Stanza.iq(attrs, data, state)
 
       resp = chardata_to_string(resp)
