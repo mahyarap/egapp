@@ -22,6 +22,8 @@ defmodule Egapp.XMPP.FSM do
     state = %{
       mod: Keyword.get(args, :mod, Egapp.Server),
       to: Keyword.fetch!(args, :to),
+      sasl_mechanisms: Keyword.get(args, :sasl_mechanisms),
+      jid_conn_registry: Keyword.get(args, :jid_conn_registry),
       client: %{
         is_authenticated: false
       }
@@ -58,7 +60,7 @@ defmodule Egapp.XMPP.FSM do
 
     case status do
       :ok -> {:next_state, :bind, state, {:reply, from, :continue}}
-      :error -> {:stop, :normal, {:reply, from, :stop}, state}
+      :error -> {:stop_and_reply, :normal, {:reply, from, :stop}, state}
     end
   end
 
@@ -178,6 +180,16 @@ defmodule Egapp.XMPP.FSM do
   def stanza({:call, from}, :end, state) do
     apply(state.mod, :send, [state.to, Stream.stream_end()])
     {:stop_and_reply, :normal, {:reply, from, :stop}}
+  end
+
+  def stanza({:call, from}, {_tag_name, attrs, _data}, state) do
+    resp =
+      Stream.not_authorized_error()
+      |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+
+    apply(state.mod, :send, [state.to, resp])
+    {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
   defp handle_syntax_error(error, from, state) do

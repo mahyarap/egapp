@@ -5,7 +5,6 @@ defmodule Egapp.XMPP.Stream do
   alias Egapp.Config
   alias Egapp.XMPP.Jid
   alias Egapp.XMPP.Element
-  alias Egapp.JidConnRegistry
 
   @doc """
   RFC6120 4.7
@@ -125,7 +124,7 @@ defmodule Egapp.XMPP.Stream do
   def auth(%{"xmlns" => Const.xmlns_sasl(), "mechanism" => mechanism}, [message], state)
       when mechanism in ["PLAIN", "DIGEST-MD5"] do
     sasl_mechanisms = Map.get(state, :sasl_mechanisms) || Config.get(:sasl_mechanisms)
-    jid_conn_registry = Map.get(state, :jid_conn_registry, JidConnRegistry)
+    jid_conn_registry = Map.get(state, :jid_conn_registry) || Egapp.JidConnRegistry
 
     {status, element, state} =
       case Egapp.SASL.authenticate!(mechanism, message, sasl_mechanisms) do
