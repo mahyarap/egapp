@@ -234,7 +234,10 @@ defmodule Egapp.XMPP.FSMTest do
   describe "in 4th state" do
     setup do
       Process.flag(:trap_exit, true)
-      {:ok, fsm} = Egapp.XMPP.FSM.start_link(mod: Kernel, to: self(), jid_conn_registry: JidConnRegistryStub)
+
+      {:ok, fsm} =
+        Egapp.XMPP.FSM.start_link(mod: Kernel, to: self(), jid_conn_registry: JidConnRegistryStub)
+
       :sys.replace_state(fsm, fn {_state, data} -> {:stanza, data} end)
       {:ok, %{fsm: fsm}}
     end
@@ -261,10 +264,18 @@ defmodule Egapp.XMPP.FSMTest do
     @tag :skip
     test "when message succeeds", %{fsm: fsm} do
       alias Egapp.XMPP.Jid
+
       :sys.replace_state(fsm, fn {state, data} ->
-        data = put_in(data, [:client, :jid], %Jid{localpart: "john", domainpart: "egapp.im", resourcepart: "123"})
+        data =
+          put_in(data, [:client, :jid], %Jid{
+            localpart: "john",
+            domainpart: "egapp.im",
+            resourcepart: "123"
+          })
+
         {state, data}
       end)
+
       attrs = %{"type" => "chat", "to" => "foo@bar/456"}
       data = [{"body", %{}, ["hi"]}]
       assert :continue = :gen_statem.call(fsm, {"message", attrs, data})

@@ -22,7 +22,11 @@ defmodule Egapp.XMPP.Conference.Stanza do
     {:ok, resp}
   end
 
-  def iq(%{"type" => "get"} = attrs, {"vCard", %{"xmlns" => Const.xmlns_vcard()}, _child_data}, state) do
+  def iq(
+        %{"type" => "get"} = attrs,
+        {"vCard", %{"xmlns" => Const.xmlns_vcard()}, _child_data},
+        state
+      ) do
     resp =
       iq_template(build_iq_attrs(attrs, :ok, state), Element.vcard())
       |> :xmerl.export_simple_element(:xmerl_xml)
