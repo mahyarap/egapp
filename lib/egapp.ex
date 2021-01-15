@@ -11,14 +11,10 @@ defmodule Egapp do
       {Egapp.JidConnRegistry, []},
       {Task.Supervisor, name: Egapp.ConnectionSupervisor},
       {Egapp.Server, []},
-      Plug.Cowboy.child_spec(
-        scheme: :http,
-        plug: Egapp.MyAss,
-        options: [
-          dispatch: dispatch(),
-          port: 8085
-        ]
-      ),
+      {
+        Plug.Cowboy,
+        scheme: :http, plug: Egapp.MyAss, options: [dispatch: dispatch(), port: 8085]
+      },
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Egapp.Supervisor)

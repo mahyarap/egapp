@@ -4,7 +4,8 @@ defmodule Egapp.Parser.XML do
   @impl true
   def init(args) do
     conn = Keyword.fetch!(args, :conn)
-    {:ok, xml_fsm} = Egapp.Parser.XML.FSM.start_link(conn: conn, parser: self())
+    mod = Keyword.get(args, :mod, Egapp.Server)
+    {:ok, xml_fsm} = Egapp.Parser.XML.FSM.start_link(mod: mod, conn: conn, parser: self())
     Process.monitor(xml_fsm)
     stream = :fxml_stream.new(xml_fsm, :infinity, [])
     {:ok, %{xml_fsm: xml_fsm, stream: stream, conn: conn}}
