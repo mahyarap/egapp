@@ -19,17 +19,23 @@ defmodule Egapp.XMPP.FSM do
 
   @impl true
   def init(args) do
+    ws = Keyword.get(args, :ws, false)
     state = %{
       mod: Keyword.get(args, :mod, Egapp.Server),
       to: Keyword.fetch!(args, :to),
       sasl_mechanisms: Keyword.get(args, :sasl_mechanisms),
       jid_conn_registry: Keyword.get(args, :jid_conn_registry),
+      ws: ws,
       client: %{
         is_authenticated: false
       }
     }
 
-    {:ok, :stream_init, state}
+    if ws do
+      {:ok, :stream_init_ws, state}
+    else
+      {:ok, :stream_init, state}
+    end
   end
 
   def start_link(args, opts \\ []) do
@@ -78,10 +84,39 @@ defmodule Egapp.XMPP.FSM do
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
+  def stream_init_ws(
+        {:call, from},
+        {"open", attrs, _data},
+        %{client: %{is_authenticated: false}} = state
+      ) do
+    {status, resp} = Stream.stream(attrs, state)
+    apply(state.mod, :send, [state.to, resp])
+
+    case status do
+      :ok -> {:next_state, :auth, state, {:reply, from, :continue}}
+      :error -> {:stop_and_reply, :normal, {:reply, from, :stop}, state}
+    end
+  end
+
+  def stream_init_ws(
+        {:call, from},
+        {"open", attrs, _data},
+        %{client: %{is_authenticated: true}} = state
+      ) do
+    {status, resp} = Stream.stream(attrs, state)
+    apply(state.mod, :send, [state.to, resp])
+
+    case status do
+      :ok -> {:next_state, :bind, state, {:reply, from, :continue}}
+      :error -> {:stop_and_reply, :normal, {:reply, from, :stop}, state}
+    end
+  end
+
   def auth({:call, from}, {"auth", attrs, data}, state) do
+    stream_init = if state.ws, do: :stream_init_ws, else: :stream_init
     {next_state, action, resp, state} =
       case Stream.auth(attrs, data, state) do
-        {:ok, resp, state} -> {:stream_init, :reset, resp, state}
+        {:ok, resp, state} -> {stream_init, :reset, resp, state}
         {:retry, resp, state} -> {:auth, :continue, resp, state}
         {:error, resp, state} -> {nil, :stop, resp, state}
       end

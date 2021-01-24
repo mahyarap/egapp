@@ -38,6 +38,26 @@ defmodule Egapp.XMPP.Stream do
     {:ok, resp}
   end
 
+  def stream(
+        %{"xmlns" => "urn:ietf:params:xml:ns:xmpp-framing", "version" => Const.xmpp_version()} = attrs,
+        state
+      ) do
+    features =
+      if Map.get(state.client, :is_authenticated) do
+        [Element.bind(), Element.session()]
+      else
+        [Element.mechanisms()]
+      end
+
+    resp =
+      Element.features(features)
+      |> stream_template_ws(build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml)
+      |> remove_last_closing_tag()
+
+    {:ok, resp}
+  end
+
   @doc """
   Returns "invalid-namespace" if the stream header is invalid
 
@@ -119,6 +139,20 @@ defmodule Egapp.XMPP.Stream do
     attrs = if from, do: [{:to, from} | stream_attrs], else: stream_attrs
     content = if content, do: [content], else: []
     {:"stream:stream", attrs, content}
+  end
+
+  def stream_template_ws(content, %{id: id, lang: lang, from: from}) do
+    stream_attrs = [
+      from: Config.get(:domain_name),
+      id: id,
+      version: Const.xmpp_version(),
+      "xml:lang": lang,
+      xmlns: 'urn:ietf:params:xml:ns:xmpp-framing'
+    ]
+
+    attrs = if from, do: [{:to, from} | stream_attrs], else: stream_attrs
+    content = if content, do: [content], else: []
+    {:"open", attrs, content}
   end
 
   def auth(%{"xmlns" => Const.xmlns_sasl(), "mechanism" => mechanism}, [message], state)

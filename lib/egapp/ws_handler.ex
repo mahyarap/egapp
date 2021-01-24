@@ -6,7 +6,8 @@ defmodule Egapp.WSHandler do
   end
 
   def websocket_init(state) do
-    {:ok, pid} = Egapp.Parser.start_link(Egapp.Parser.XML, mod: Kernel, conn: self())
+    opts = [mod: Kernel, conn: self()]
+    {:ok, pid} = Egapp.Parser.start_link(Egapp.Parser.WebsocketXML, opts)
     state = Map.put(state, :parser_pid, pid)
     {:ok, state}
   end
