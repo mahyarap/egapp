@@ -6,6 +6,8 @@ defmodule Egapp.XMPP.Element do
   """
   def features(content), do: {:"stream:features", content}
 
+  def features_ws(content), do: {:"stream:features", ["xmlns:stream": "http://etherx.jabber.org/streams"], content}
+
   @doc """
   RFC6120 7.4
   RFC6120 7.6.1

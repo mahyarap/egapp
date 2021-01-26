@@ -49,11 +49,13 @@ defmodule Egapp.XMPP.Stream do
         [Element.mechanisms()]
       end
 
-    resp =
-      Element.features(features)
-      |> stream_template_ws(build_stream_attrs(attrs, state))
-      |> :xmerl.export_simple_element(:xmerl_xml)
-      |> remove_last_closing_tag()
+    resp = [
+      stream_template_ws([], build_stream_attrs(attrs, state))
+      |> :xmerl.export_simple_element(:xmerl_xml),
+
+      Element.features_ws(features)
+      |> :xmerl.export_simple_element(b, :xmerl_xml)
+    ]
 
     {:ok, resp}
   end
