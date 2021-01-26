@@ -54,7 +54,7 @@ defmodule Egapp.XMPP.Stream do
       |> :xmerl.export_simple_element(:xmerl_xml),
 
       Element.features_ws(features)
-      |> :xmerl.export_simple_element(b, :xmerl_xml)
+      |> :xmerl.export_simple_element(:xmerl_xml)
     ]
 
     {:ok, resp}
