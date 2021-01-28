@@ -208,7 +208,7 @@ defmodule Egapp.XMPP.FSM do
 
   def stanza({:call, from}, {"message", attrs, data}, state) do
     {:ok, {to, resp}} = Stanza.message(attrs, data, state)
-    apply(state.mod, :send, [to, resp])
+    apply(Egapp.Server, :send, [to, resp])
     {:next_state, :stanza, state, {:reply, from, :continue}}
   end
 
