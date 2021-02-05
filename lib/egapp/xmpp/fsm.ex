@@ -21,7 +21,12 @@ defmodule Egapp.XMPP.FSM do
   def init(args) do
     ws = Keyword.get(args, :ws, false)
     state = %{
-      mod: Keyword.get(args, :mod, Egapp.Server),
+      mod: fn conn -> 
+        cond do
+          is_pid conn -> Kernel
+          is_port conn -> Egapp.Server
+        end
+      end,
       to: Keyword.fetch!(args, :to),
       sasl_mechanisms: Keyword.get(args, :sasl_mechanisms),
       jid_conn_registry: Keyword.get(args, :jid_conn_registry),
@@ -48,7 +53,7 @@ defmodule Egapp.XMPP.FSM do
         %{client: %{is_authenticated: false}} = state
       ) do
     {status, resp} = Stream.stream(attrs, state)
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
 
     case status do
       :ok -> {:next_state, :auth, state, {:reply, from, :continue}}
@@ -62,7 +67,7 @@ defmodule Egapp.XMPP.FSM do
         %{client: %{is_authenticated: true}} = state
       ) do
     {status, resp} = Stream.stream(attrs, state)
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
 
     case status do
       :ok -> {:next_state, :bind, state, {:reply, from, :continue}}
@@ -80,7 +85,7 @@ defmodule Egapp.XMPP.FSM do
       |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
@@ -90,7 +95,7 @@ defmodule Egapp.XMPP.FSM do
         %{client: %{is_authenticated: false}} = state
       ) do
     {status, resp} = Stream.stream(attrs, state)
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
 
     case status do
       :ok -> {:next_state, :auth, state, {:reply, from, :continue}}
@@ -104,7 +109,7 @@ defmodule Egapp.XMPP.FSM do
         %{client: %{is_authenticated: true}} = state
       ) do
     {status, resp} = Stream.stream(attrs, state)
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
 
     case status do
       :ok -> {:next_state, :bind, state, {:reply, from, :continue}}
@@ -121,7 +126,7 @@ defmodule Egapp.XMPP.FSM do
         {:error, resp, state} -> {nil, :stop, resp, state}
       end
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
 
     if next_state do
       {:next_state, next_state, state, {:reply, from, action}}
@@ -131,7 +136,7 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def auth({:call, from}, :end, state) do
-    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    apply(state.mod.(state.to), :send, [state.to, Stream.stream_end()])
     {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
@@ -144,7 +149,7 @@ defmodule Egapp.XMPP.FSM do
       Stream.not_well_formed_error()
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
@@ -156,7 +161,7 @@ defmodule Egapp.XMPP.FSM do
     {status, resp} = Stanza.iq(attrs, child_node, state)
 
     Enum.each(resp, fn {conn, content} ->
-      apply(state.mod, :send, [conn, content])
+      apply(state.mod.(conn), :send, [conn, content])
     end)
 
     case status do
@@ -175,12 +180,12 @@ defmodule Egapp.XMPP.FSM do
       |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
   def bind({:call, from}, :end, state) do
-    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    apply(state.mod.(state.to), :send, [state.to, Stream.stream_end()])
     {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
@@ -188,7 +193,7 @@ defmodule Egapp.XMPP.FSM do
     {status, resp} = Stanza.iq(attrs, data, state)
 
     Enum.each(resp, fn {conn, content} ->
-      apply(state.mod, :send, [conn, content])
+      apply(state.mod.(conn), :send, [conn, content])
     end)
 
     case status do
@@ -198,9 +203,10 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def stanza({:call, from}, {"presence", attrs, data}, state) do
+    IO.inspect {"GGGGGGGGGGGGGGGGGG", attrs, data}
     Stanza.presence(attrs, data, state)
     |> Enum.each(fn {conn, resp} ->
-      apply(state.mod, :send, [conn, resp])
+      apply(state.mod.(conn), :send, [conn, resp])
     end)
 
     {:next_state, :stanza, state, {:reply, from, :continue}}
@@ -217,7 +223,7 @@ defmodule Egapp.XMPP.FSM do
   end
 
   def stanza({:call, from}, :end, state) do
-    apply(state.mod, :send, [state.to, Stream.stream_end()])
+    apply(state.mod.(state.to), :send, [state.to, Stream.stream_end()])
     {:stop_and_reply, :normal, {:reply, from, :stop}}
   end
 
@@ -227,7 +233,7 @@ defmodule Egapp.XMPP.FSM do
       |> Stream.stream_template(Stream.build_stream_attrs(attrs, state))
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 
@@ -258,7 +264,7 @@ defmodule Egapp.XMPP.FSM do
       |> Stream.stream_template(Stream.build_stream_attrs(%{}, state))
       |> :xmerl.export_simple_element(:xmerl_xml)
 
-    apply(state.mod, :send, [state.to, resp])
+    apply(state.mod.(state.to), :send, [state.to, resp])
     {:stop_and_reply, :normal, {:reply, from, :stop}, state}
   end
 end

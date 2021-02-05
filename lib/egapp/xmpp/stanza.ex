@@ -139,6 +139,10 @@ defmodule Egapp.XMPP.Stanza do
     end
   end
 
+  defp do_stanza(stanza, %{"to" => to, "type" => "subscribe"} = attrs, data, state) do
+    []
+  end
+
   defp do_stanza(stanza, %{"to" => to} = attrs, data, state) do
     services = Map.get(state, :services) || Config.get(:services)
 
